@@ -2,18 +2,18 @@
 
 import sys
 
-from qtpy.QtCore import QPoint, QRect, Qt
-from qtpy.QtGui import QImage, QMouseEvent, QPainter, QPen
+import nccapy
+from qtpy.QtCore import QRect, Qt
+from qtpy.QtGui import QImage, QPainter
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from WebGPU import WebGPU
-import nccapy
+
 
 class DrawingWidget(QWidget):
     def __init__(self, parent=None, size=(1024, 720)):
         super().__init__(parent)
-        #self.setFixedSize(size[0], size[1])  # Set the size of the drawing widget
-
+        # self.setFixedSize(size[0], size[1])  # Set the size of the drawing widget
 
     def paintEvent(self, event):
         if hasattr(self, "buffer"):
@@ -28,16 +28,11 @@ class DrawingWidget(QWidget):
 
         # # Just in case, set render hints that may hurt performance.
         painter.setRenderHints(
-            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform,
-            False,
+            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform, False
         )
 
         image = QImage(
-            image_data.flatten(),
-            size[0],
-            size[1],
-            size[0] * 4,
-            QImage.Format.Format_RGBA8888,
+            image_data.flatten(), size[0], size[1], size[0] * 4, QImage.Format.Format_RGBA8888
         )
 
         rect1 = QRect(0, 0, size[0], size[1])
@@ -72,7 +67,7 @@ class MainWindow(QMainWindow):
         self.drawing_widget = DrawingWidget()
         layout.addWidget(self.drawing_widget)
         self.setCentralWidget(central_widget)
-        self.resize(1024,720)
+        self.resize(1024, 720)
         self.timer = self.startTimer(20)
 
     def timerEvent(self, event):
@@ -143,11 +138,10 @@ class MainWindow(QMainWindow):
         elif key == Qt.Key.Key_Space:
             self.spinXFace = 0
             self.spinYFace = 0
-            self.modelPos.set(0,0,0)
+            self.modelPos.set(0, 0, 0)
         elif key == Qt.Key.Key_L:
             self.transformLight ^= True
         self.update()
-
 
 
 def main():

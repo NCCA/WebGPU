@@ -1,11 +1,12 @@
 import nccapy
 import numpy as np
 import wgpu
+
 from Primitives import Primitives
 
 
 class WebGPU:
-    def __init__(self,texture_size=(1024,1024,1)):
+    def __init__(self, texture_size=(1024, 1024, 1)):
         self.rotation = 0.0
         self.mouse_rotation = nccapy.Mat4()
         self.texture_size = texture_size
@@ -34,7 +35,6 @@ class WebGPU:
         )
         self.depth_buffer_view = depth_texture.create_view()
 
-
     def load_shader(self, shader):
         with open(shader, "r") as f:
             shader_code = f.read()
@@ -52,11 +52,7 @@ class WebGPU:
                         "array_stride": 3 * 4,
                         "attributes": [
                             {"shader_location": 0, "offset": 0, "format": "float32x3"},
-                            {
-                                "shader_location": 1,
-                                "offset": 0,
-                                "format": "float32x3",
-                            },
+                            {"shader_location": 1, "offset": 0, "format": "float32x3"},
                         ],
                     }
                 ],
@@ -72,11 +68,7 @@ class WebGPU:
                 "depth_write_enabled": True,
                 "depth_compare": wgpu.CompareFunction.less,
             },
-            multisample={
-                "count": 1,
-                "mask": 0xFFFFFFFF,
-                "alpha_to_coverage_enabled": False,
-            },
+            multisample={"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False},
         )
         bind_group_layout = self.pipeline.get_bind_group_layout(0)
         # Create the bind group
@@ -86,7 +78,7 @@ class WebGPU:
                 {
                     "binding": 0,  # Matches @binding(0) in the shader
                     "resource": {"buffer": self.uniform_buffer},
-                },
+                }
             ],
         )
 
@@ -95,14 +87,11 @@ class WebGPU:
             1024 * 720 * 4
         )  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
         readback_buffer = self.device.create_buffer(
-            size=buffer_size,
-            usage=wgpu.BufferUsage.COPY_DST | wgpu.BufferUsage.MAP_READ,
+            size=buffer_size, usage=wgpu.BufferUsage.COPY_DST | wgpu.BufferUsage.MAP_READ
         )
         command_encoder = self.device.create_command_encoder()
         command_encoder.copy_texture_to_buffer(
-            {
-                "texture": self.colour_texture,
-            },
+            {"texture": self.colour_texture},
             {
                 "buffer": readback_buffer,
                 "bytes_per_row": 1024 * 4,  # Row stride (width * bytes per pixel)
@@ -131,14 +120,14 @@ class WebGPU:
         # z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = y
         mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @self.mouse_rotation @ rotation ).get_numpy().astype(np.float32)
+            (self.persp @ self.lookat @ self.mouse_rotation @ rotation)
+            .get_numpy()
+            .astype(np.float32)
         )
         self.uniform_data["MVP"] = mvp_matrix.flatten()
 
         self.device.queue.write_buffer(
-            buffer=self.uniform_buffer,
-            buffer_offset=0,
-            data=self.uniform_data.tobytes(),
+            buffer=self.uniform_buffer, buffer_offset=0, data=self.uniform_data.tobytes()
         )
 
     def set_mouse(self, x, y, model_pos):
@@ -149,6 +138,7 @@ class WebGPU:
         rotation.m[3][1] = model_pos.y
         rotation.m[3][2] = model_pos.z
         self.mouse_rotation = rotation
+
     def render(self):
         command_encoder = self.device.create_command_encoder()
         render_pass = command_encoder.begin_render_pass(
@@ -185,16 +175,18 @@ class WebGPU:
         )
         rotation = nccapy.Mat4.rotate_y(40)
         mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @self.mouse_rotation @ rotation ).get_numpy().astype(np.float32)
+            (self.persp @ self.lookat @ self.mouse_rotation @ rotation)
+            .get_numpy()
+            .astype(np.float32)
         )
 
         self.uniform_data = np.zeros(
             (),
             dtype=[
                 ("MVP", "float32", (16)),
-                ("colour", "float32",(3)),
-                ("padding", "float32", (1)), # to 80 bytes
-            ]
+                ("colour", "float32", (3)),
+                ("padding", "float32", (1)),  # to 80 bytes
+            ],
         )
 
         self.uniform_data["MVP"] = mvp_matrix.flatten()

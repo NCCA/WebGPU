@@ -2,8 +2,8 @@
 
 import sys
 
-from qtpy.QtCore import QPoint, QRect, Qt
-from qtpy.QtGui import QImage, QMouseEvent, QPainter, QPen
+from qtpy.QtCore import QRect
+from qtpy.QtGui import QImage, QPainter
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from WebGPU import WebGPU
@@ -12,7 +12,6 @@ from WebGPU import WebGPU
 class DrawingWidget(QWidget):
     def __init__(self, parent=None, size=(1024, 720)):
         super().__init__(parent)
-
 
     def paintEvent(self, event):
         if hasattr(self, "buffer"):
@@ -27,16 +26,11 @@ class DrawingWidget(QWidget):
 
         # # Just in case, set render hints that may hurt performance.
         painter.setRenderHints(
-            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform,
-            False,
+            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform, False
         )
 
         image = QImage(
-            image_data.flatten(),
-            size[0],
-            size[1],
-            size[0] * 4,
-            QImage.Format.Format_RGBA8888,
+            image_data.flatten(), size[0], size[1], size[0] * 4, QImage.Format.Format_RGBA8888
         )
 
         rect1 = QRect(0, 0, size[0], size[1])

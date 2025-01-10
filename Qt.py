@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import sys
-import qtpy 
+
+import wgpu
 from qtpy.QtCore import QTimer
-from qtpy.QtGui import QSurfaceFormat
 from qtpy.QtGui import QWindow
 from qtpy.QtWidgets import QApplication
-import wgpu
 from wgpu.gui.qt import WgpuCanvas
+
 
 # Step 1: Create a custom rendering window using WgpuCanvas
 class WebGPUWindow(QWindow):
@@ -20,17 +20,16 @@ class WebGPUWindow(QWindow):
         adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
         self.device = adapter.request_device_sync(required_limits=None)
         # self.device = wgpu.request_adapter_sync(canvas=self.canvas).request_device()
-#         swap_chain_format = context.get_preferred_format(adapter)
-#         context.configure(
-#                     device=device, format=swap_chain_format, usage=wgpu.TextureUsage.RENDER_ATTACHMENT
-# )
+        #         swap_chain_format = context.get_preferred_format(adapter)
+        #         context.configure(
+        #                     device=device, format=swap_chain_format, usage=wgpu.TextureUsage.RENDER_ATTACHMENT
+        # )
 
-        
-#         self.swap_chain = self.device.configure_swap_chain(
-#             canvas=self.canvas,
-#             format=wgpu.TextureFormat.bgra8unorm_srgb,
-#             usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
-#         )
+        #         self.swap_chain = self.device.configure_swap_chain(
+        #             canvas=self.canvas,
+        #             format=wgpu.TextureFormat.bgra8unorm_srgb,
+        #             usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
+        #         )
         self.initialize_renderer()
 
         # Timer for continuous rendering
@@ -78,9 +77,7 @@ class WebGPUWindow(QWindow):
                         )
                     ],
                 ),
-                primitive=wgpu.PrimitiveState(
-                    topology=wgpu.PrimitiveTopology.triangle_list
-                ),
+                primitive=wgpu.PrimitiveState(topology=wgpu.PrimitiveTopology.triangle_list),
             )
         )
 
@@ -108,6 +105,7 @@ class WebGPUWindow(QWindow):
         self.device.queue.submit([command_encoder.finish()])
         self.canvas.update()  # Ensure the canvas updates
 
+
 # Step 2: Initialize the PyQt application
 def main():
     app = QApplication(sys.argv)
@@ -115,6 +113,7 @@ def main():
     window.resize(800, 600)
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

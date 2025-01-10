@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
+import numpy as np
 import wgpu
 import wgpu.utils
-import numpy as np
+from wgpu.gui.auto import WgpuCanvas
 from wgpu.utils import get_default_device
-from wgpu.gui.auto import WgpuCanvas, run
 
 # Define shader code
 vertex_shader_code = """
@@ -37,20 +37,22 @@ fn main(@location(0) fragColor: vec3<f32>, @location(1) fragUV: vec2<f32>) -> @l
 """
 
 # Triangle vertices (position, color, uv)
-vertices = np.array([
-    # Position          # Color         # UV
-    [0.0,  0.5, 0.0,    1.0, 0.0, 0.0,  0.5, 1.0],  # Top vertex
-    [-0.5, -0.5, 0.0,   0.0, 1.0, 0.0,  0.0, 0.0],  # Bottom-left vertex
-    [0.5, -0.5, 0.0,    0.0, 0.0, 1.0,  1.0, 0.0],  # Bottom-right vertex
-], dtype=np.float32)
+vertices = np.array(
+    [
+        # Position          # Color         # UV
+        [0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.5, 1.0],  # Top vertex
+        [-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],  # Bottom-left vertex
+        [0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],  # Bottom-right vertex
+    ],
+    dtype=np.float32,
+)
 
 # Get the default device
 device = get_default_device()
 
 # Create the vertex buffer
 vertex_buffer = device.create_buffer_with_data(
-    data=vertices.tobytes(),
-    usage=wgpu.BufferUsage.VERTEX,
+    data=vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX
 )
 
 # Define the render pipeline

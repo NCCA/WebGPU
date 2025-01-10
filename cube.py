@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import imageio
 import nccapy
 import numpy as np
 import wgpu
@@ -64,21 +63,15 @@ vertex_shader = device.create_shader_module(code=vertex_shader_code)
 fragment_shader = device.create_shader_module(code=fragment_shader_code)
 
 # Create the vertex buffer
-vertex_buffer = device.create_buffer_with_data(
-    data=vertices, usage=wgpu.BufferUsage.VERTEX
-)
+vertex_buffer = device.create_buffer_with_data(data=vertices, usage=wgpu.BufferUsage.VERTEX)
 
 # Create the index buffer
-index_buffer = device.create_buffer_with_data(
-    data=indices, usage=wgpu.BufferUsage.INDEX
-)
+index_buffer = device.create_buffer_with_data(data=indices, usage=wgpu.BufferUsage.INDEX)
 
 # Create the uniform buffer
 
 persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
-lookat = nccapy.look_at(
-    nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
-)
+lookat = nccapy.look_at(nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0))
 rotation = nccapy.Mat4.rotate_y(40)
 mvp_matrix = mvp_matrixncca = (persp @ lookat @ rotation).get_numpy().astype(np.float32)
 # print(mvp_matrix)
@@ -94,9 +87,7 @@ uniform_buffer = device.create_buffer_with_data(
 
 # Create the depth texture
 depth_texture = device.create_texture(
-    size=size,
-    usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
-    format=wgpu.TextureFormat.depth24plus,
+    size=size, usage=wgpu.TextureUsage.RENDER_ATTACHMENT, format=wgpu.TextureFormat.depth24plus
 )
 depth_texture_view = depth_texture.create_view()
 
@@ -107,9 +98,7 @@ bind_group_layout = device.create_bind_group_layout(
         {
             "binding": 0,
             "visibility": wgpu.ShaderStage.VERTEX,
-            "buffer": {
-                "type": wgpu.BufferBindingType.uniform,
-            },
+            "buffer": {"type": wgpu.BufferBindingType.uniform},
         },
         # Add other bindings as needed
     ]
@@ -121,12 +110,8 @@ bind_group = device.create_bind_group(
     entries=[
         {
             "binding": 0,
-            "resource": {
-                "buffer": uniform_buffer,
-                "offset": 0,
-                "size": mvp_matrix.nbytes,
-            },
-        },
+            "resource": {"buffer": uniform_buffer, "offset": 0, "size": mvp_matrix.nbytes},
+        }
     ],
 )
 
@@ -162,11 +147,7 @@ pipeline = device.create_render_pipeline(
         "depth_write_enabled": True,
         "depth_compare": wgpu.CompareFunction.less,
     },
-    multisample={
-        "count": 1,
-        "mask": 0xFFFFFFFF,
-        "alpha_to_coverage_enabled": False,
-    },
+    multisample={"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False},
 )
 
 

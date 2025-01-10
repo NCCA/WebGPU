@@ -1,0 +1,45 @@
+[project]
+name = "WebGPUDemos"
+authors = [
+  { name="Jon Macey", email="jmacey@bournemouth.ac.uk" },
+]
+description = "Some WebGPU demos"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = {file = "LICENSE.txt"}
+version = "0.0.12"
+dependencies = [
+    "nccapy",
+    "wgpu",
+    "pyside6",
+    "numpy"]
+[project.urls]
+Homepage = "https://github.com/NCCA/WebGPU"
+Issues = "https://github.com/NCCA/WebGPU/issues"
+
+[tool.mypy]
+disable_error_code = "import-untyped"
+warn_return_any = true
+warn_unused_configs = true
+follow_imports="skip"
+exclude = "tests/*" 
+namespace_packages = true
+explicit_package_bases = true
+
+
+
+[tool.black]
+line-length = 99
+target-version = [ "py39", "py310", "py311","py312"]
+skip-magic-trailing-comma = true
+
+[tool.isort]
+py_version = 39
+profile = "black"
+line_length = 99
+combine_as_imports = true
+skip_gitignore = true
