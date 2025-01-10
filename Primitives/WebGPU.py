@@ -1,18 +1,18 @@
 import nccapy
 import numpy as np
 import wgpu
-import wgpu.backends.auto
-from wgpu.utils import get_default_device
 from Primitives import Primitives
 
+
 class WebGPU:
-    def __init__(self):
+    def __init__(self,texture_size=(1024,1024,1)):
+        self.rotation = 0.0
+        self.texture_size = texture_size
         self.init_context()
         self.load_shader("line_shader.wgsl")
-        Primitives.create_line_grid( "grid", self.device, 10, 10, 10)
+        Primitives.create_line_grid("grid", self.device, 8, 8, 50)
         self.create_uniform_buffers()
         self.create_pipeline()
-        self.rotation = 0.0
 
     def init_context(self, power_preference="high-performance", limits=None):
         # Request an adapter and device
@@ -20,31 +20,29 @@ class WebGPU:
         self.device = self.adapter.request_device_sync(required_limits=limits)
         # this is the target texture size
         self.colour_texture = self.device.create_texture(
-            size=(1024, 720, 1),  # width, height, depth
+            size=self.texture_size,  # width, height, depth
             format=wgpu.TextureFormat.rgba8unorm,
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT | wgpu.TextureUsage.COPY_SRC,
         )
         self.colour_buffer_view = self.colour_texture.create_view()
         # Now create a depth buffer
         depth_texture = self.device.create_texture(
-            size=(1024, 720, 1),  # width, height, depth
+            size=self.texture_size,  # width, height, depth
             format=wgpu.TextureFormat.depth24plus,
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
         )
         self.depth_buffer_view = depth_texture.create_view()
 
-        # Create the canvas and configure the swap chain
+
     def load_shader(self, shader):
         with open(shader, "r") as f:
             shader_code = f.read()
         self.shader = self.device.create_shader_module(code=shader_code)
 
-
     def create_pipeline(self):
-
         # Create the render pipeline
         self.pipeline = self.device.create_render_pipeline(
-            layout="auto", #pipeline_layout,
+            layout="auto",  # pipeline_layout,
             vertex={
                 "module": self.shader,
                 "entry_point": "vertex_main",
@@ -55,7 +53,7 @@ class WebGPU:
                             {"shader_location": 0, "offset": 0, "format": "float32x3"},
                             {
                                 "shader_location": 1,
-                                "offset": 0 ,
+                                "offset": 0,
                                 "format": "float32x3",
                             },
                         ],
@@ -78,12 +76,11 @@ class WebGPU:
                 "mask": 0xFFFFFFFF,
                 "alpha_to_coverage_enabled": False,
             },
-            
         )
         bind_group_layout = self.pipeline.get_bind_group_layout(0)
         # Create the bind group
         self.bind_group = self.device.create_bind_group(
-            layout=bind_group_layout,  
+            layout=bind_group_layout,
             entries=[
                 {
                     "binding": 0,  # Matches @binding(0) in the shader
@@ -128,18 +125,19 @@ class WebGPU:
 
     def update_uniform_buffers(self):
         self.rotation += 1
-        #x = nccapy.Mat4.rotate_x(self.rotation)
+        # x = nccapy.Mat4.rotate_x(self.rotation)
         y = nccapy.Mat4.rotate_y(self.rotation)
-        #z = nccapy.Mat4.rotate_z(self.rotation)
-        rotation = y 
-        self.mvp_matrix = mvp_matrixncca = (
+        # z = nccapy.Mat4.rotate_z(self.rotation)
+        rotation = y
+        mvp_matrix = mvp_matrixncca = (
             (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
         )
+        self.uniform_data["MVP"] = mvp_matrix.flatten()
 
         self.device.queue.write_buffer(
             buffer=self.uniform_buffer,
             buffer_offset=0,
-            data=self.mvp_matrix.tobytes(),
+            data=self.uniform_data.tobytes(),
         )
 
     def render(self):
@@ -177,12 +175,23 @@ class WebGPU:
             nccapy.Vec3(0, 4, 12), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
         rotation = nccapy.Mat4.rotate_y(40)
-        self.mvp_matrix = mvp_matrixncca = (
+        mvp_matrix = mvp_matrixncca = (
             (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
         )
 
+        self.uniform_data = np.zeros(
+            (),
+            dtype=[
+                ("MVP", "float32", (16)),
+                ("colour", "float32",(3)),
+                ("padding", "float32", (1)), # to 80 bytes
+            ]
+        )
+
+        self.uniform_data["MVP"] = mvp_matrix.flatten()
+        self.uniform_data["colour"] = np.array([1.0, 1.0, 0.0])
         self.uniform_buffer = self.device.create_buffer_with_data(
-            data=self.mvp_matrix.astype(np.float32),
+            data=self.uniform_data.tobytes(),
             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
-            label="uniform_buffer MVP",
+            label="uniform_buffer",
         )

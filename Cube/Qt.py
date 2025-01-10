@@ -12,16 +12,7 @@ from WebGPU import WebGPU
 class DrawingWidget(QWidget):
     def __init__(self, parent=None, size=(1024, 720)):
         super().__init__(parent)
-        self.setFixedSize(size[0], size[1])  # Set the size of the drawing widget
 
-    def mousePressEvent(self, event: QMouseEvent):
-        ...
-
-    def mouseMoveEvent(self, event: QMouseEvent):
-        ...
-
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        ...
 
     def paintEvent(self, event):
         if hasattr(self, "buffer"):
@@ -69,6 +60,7 @@ class MainWindow(QMainWindow):
         self.drawing_widget = DrawingWidget()
         layout.addWidget(self.drawing_widget)
         self.setCentralWidget(central_widget)
+        self.resize(1024, 720)
         self.timer = self.startTimer(20)
 
     def timerEvent(self, event):

@@ -10,24 +10,24 @@ which will generate a pipeline for this object and draw into the current context
 #!/usr/bin/env python3
 
 
-
 import numpy as np
 import wgpu
+
 
 class _primitive:
     def __init__(self):
         self.buffer = None
-        self.draw_size=0
-        self.type=None
+        self.draw_size = 0
+        self.type = None
 
 
 class Primitives:
     # this is effectively a static class so we can use it to store data
     # and generate pipelines for drawing
-    _primitives={}
+    _primitives = {}
 
     @classmethod
-    def create_line_grid(cls,name,device,width, depth, steps):
+    def create_line_grid(cls, name, device, width, depth, steps):
         # Calculate the step size for each grid value
         wstep = width / steps
         ws2 = width / 2.0
@@ -61,18 +61,18 @@ class Primitives:
         vertex_buffer = device.create_buffer_with_data(
             data=data_array, usage=wgpu.BufferUsage.VERTEX
         )
-        prim=_primitive()
-        prim.buffer=vertex_buffer
-        prim.draw_size=len(data_array)
-        prim.draw_type="line"
-        cls._primitives[name]=prim
-   
+        prim = _primitive()
+        prim.buffer = vertex_buffer
+        prim.draw_size = len(data_array)
+        prim.draw_type = "line"
+        cls._primitives[name] = prim
+
     @classmethod
-    def draw(cls,render_pass,name) :
-        try :
-            prim=cls._primitives[name]
+    def draw(cls, render_pass, name):
+        try:
+            prim = cls._primitives[name]
             render_pass.set_vertex_buffer(0, prim.buffer)
-            if prim.draw_type=="line":
+            if prim.draw_type == "line":
                 render_pass.draw(prim.draw_size, 1, 0, 0)
 
         except KeyError:
@@ -80,7 +80,5 @@ class Primitives:
             return
 
 
-
 if __name__ == "__main__":
-
     print("Primitives")
