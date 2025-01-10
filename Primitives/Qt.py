@@ -7,7 +7,7 @@ from qtpy.QtGui import QImage, QMouseEvent, QPainter, QPen
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from WebGPU import WebGPU
-
+import nccapy
 
 class DrawingWidget(QWidget):
     def __init__(self, parent=None, size=(1024, 720)):
@@ -54,6 +54,17 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("WebGPU in Qt")
         self.webgpu = WebGPU()
+        self.spinXFace = int(0)
+        self.spinYFace = int(0)
+        self.rotate = False
+        self.translate = False
+        self.origX = int(0)
+        self.origY = int(0)
+        self.origXPos = int(0)
+        self.origYPos = int(0)
+        self.INCREMENT = 0.01
+        self.ZOOM = 0.1
+        self.modelPos = nccapy.Vec3()
 
         # Create a central widget with the drawing widget
         central_widget = QWidget(self)
@@ -65,10 +76,78 @@ class MainWindow(QMainWindow):
         self.timer = self.startTimer(20)
 
     def timerEvent(self, event):
+        self.webgpu.set_mouse(self.spinXFace, self.spinYFace, self.modelPos)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
         self.drawing_widget.buffer = self.webgpu.get_colour_buffer()
         self.update()
+
+    def mousePressEvent(self, event):
+        pos = event.position()
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.origX = pos.x()
+            self.origY = pos.y()
+            self.rotate = True
+
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.origXPos = pos.x()
+            self.origYPos = pos.y()
+            self.translate = True
+
+    def mouseMoveEvent(self, event):
+        if self.rotate and event.buttons() == Qt.MouseButton.LeftButton:
+            pos = event.position()
+            diffx = int(pos.x() - self.origX)
+            diffy = int(pos.y() - self.origY)
+            self.spinXFace += 0.5 * diffy
+            self.spinYFace += 0.5 * diffx
+            self.origX = pos.x()
+            self.origY = pos.y()
+            self.update()
+        elif self.translate and event.buttons() == Qt.MouseButton.RightButton:
+            pos = event.position()
+            diffX = int(pos.x() - self.origXPos)
+            diffY = int(pos.y() - self.origYPos)
+            self.origXPos = pos.x()
+            self.origYPos = pos.y()
+            self.modelPos.x += self.INCREMENT * diffX
+            self.modelPos.y -= self.INCREMENT * diffY
+            self.update()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.rotate = False
+
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.translate = False
+
+    def wheelEvent(self, event):
+        numPixels = event.pixelDelta()
+        if numPixels.x() > 0:
+            self.modelPos.z += self.ZOOM
+
+        elif numPixels.x() < 0:
+            self.modelPos.z -= self.ZOOM
+        if numPixels.y() > 0:
+            self.modelPos.x += self.ZOOM
+
+        elif numPixels.y() < 0:
+            self.modelPos.x -= self.ZOOM
+
+        self.update()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key.Key_Escape:
+            exit()
+        elif key == Qt.Key.Key_Space:
+            self.spinXFace = 0
+            self.spinYFace = 0
+            self.modelPos.set(0,0,0)
+        elif key == Qt.Key.Key_L:
+            self.transformLight ^= True
+        self.update()
+
 
 
 def main():

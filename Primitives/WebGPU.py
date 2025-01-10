@@ -7,6 +7,7 @@ from Primitives import Primitives
 class WebGPU:
     def __init__(self,texture_size=(1024,1024,1)):
         self.rotation = 0.0
+        self.mouse_rotation = nccapy.Mat4()
         self.texture_size = texture_size
         self.init_context()
         self.load_shader("line_shader.wgsl")
@@ -130,7 +131,7 @@ class WebGPU:
         # z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = y
         mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+            (self.persp @ self.lookat @self.mouse_rotation @ rotation ).get_numpy().astype(np.float32)
         )
         self.uniform_data["MVP"] = mvp_matrix.flatten()
 
@@ -140,6 +141,14 @@ class WebGPU:
             data=self.uniform_data.tobytes(),
         )
 
+    def set_mouse(self, x, y, model_pos):
+        rot_x = nccapy.Mat4.rotate_x(x)
+        rot_y = nccapy.Mat4.rotate_y(y)
+        rotation = rot_x @ rot_y
+        rotation.m[3][0] = model_pos.x
+        rotation.m[3][1] = model_pos.y
+        rotation.m[3][2] = model_pos.z
+        self.mouse_rotation = rotation
     def render(self):
         command_encoder = self.device.create_command_encoder()
         render_pass = command_encoder.begin_render_pass(
@@ -176,7 +185,7 @@ class WebGPU:
         )
         rotation = nccapy.Mat4.rotate_y(40)
         mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+            (self.persp @ self.lookat @self.mouse_rotation @ rotation ).get_numpy().astype(np.float32)
         )
 
         self.uniform_data = np.zeros(
