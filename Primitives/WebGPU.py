@@ -8,7 +8,6 @@ from Primitives import Primitives
 class WebGPU:
     def __init__(self):
         self.init_context()
-        #self.load_shaders("vertex_shader.wgsl", "fragment_shader.wgsl")
         self.load_shader("line_shader.wgsl")
         Primitives.create_line_grid( "grid", self.device, 10, 10, 10)
         self.create_uniform_buffers()
@@ -39,55 +38,13 @@ class WebGPU:
         with open(shader, "r") as f:
             shader_code = f.read()
         self.shader = self.device.create_shader_module(code=shader_code)
-    # def load_shaders(self, vertex_shader, fragment_shader):
-    #     with open(vertex_shader, "r") as f:
-    #         vertex_shader_code = f.read()
-
-    #     with open(fragment_shader, "r") as f:
-    #         fragment_shader_code = f.read()
-    #     self.vertex_shader = self.device.create_shader_module(code=vertex_shader_code)
-    #     self.fragment_shader = self.device.create_shader_module(
-    #         code=fragment_shader_code
-    #     )
 
 
     def create_pipeline(self):
-        # Create the bind group
-        bind_group_layout = self.device.create_bind_group_layout(
-            entries=[
-                {
-                    "binding": 0,
-                    "visibility": wgpu.ShaderStage.VERTEX,
-                    "buffer": {
-                        "type": wgpu.BufferBindingType.uniform,
-                    },
-                },
-                # Add other bindings as needed
-            ]
-        )
-
-        self.bind_group = self.device.create_bind_group(
-            layout=bind_group_layout,
-            entries=[
-                {
-                    "binding": 0,
-                    "resource": {
-                        "buffer": self.uniform_buffer,
-                        "offset": 0,
-                        "size": self.mvp_matrix.nbytes,
-                    },
-                },
-            ],
-        )
-
-        # Create the pipeline layout
-        pipeline_layout = self.device.create_pipeline_layout(
-            bind_group_layouts=[bind_group_layout]
-        )
 
         # Create the render pipeline
         self.pipeline = self.device.create_render_pipeline(
-            layout=pipeline_layout,
+            layout="auto", #pipeline_layout,
             vertex={
                 "module": self.shader,
                 "entry_point": "vertex_main",
@@ -121,6 +78,18 @@ class WebGPU:
                 "mask": 0xFFFFFFFF,
                 "alpha_to_coverage_enabled": False,
             },
+            
+        )
+        bind_group_layout = self.pipeline.get_bind_group_layout(0)
+        # Create the bind group
+        self.bind_group = self.device.create_bind_group(
+            layout=bind_group_layout,  
+            entries=[
+                {
+                    "binding": 0,  # Matches @binding(0) in the shader
+                    "resource": {"buffer": self.uniform_buffer},
+                },
+            ],
         )
 
     def get_colour_buffer(self):
