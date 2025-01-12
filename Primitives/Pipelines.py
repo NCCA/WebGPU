@@ -9,7 +9,7 @@ to use them. Most of the shaders are quite simple in this case.
 import wgpu
 import numpy as np
 import nccapy
-from PipelineShaders import line_shader
+from PipelineShaders import line_shader, diffuse_shader
 
 
 class PipeLineException(Exception):
@@ -112,4 +112,8 @@ class Pipelines :
         pipeline_entry = _pipelineEntry(pipeline=pipeline,bind_group=bind_group,uniform_buffer=uniform_buffer,uniform_data=uniform_data)
         cls._pipelines[name] = pipeline_entry
         return pipeline_entry
+    
+    @classmethod
+    def create_diffuse_pipeline(cls,name,device):
+        shader = device.create_shader_module(code=diffuse_shader)
 

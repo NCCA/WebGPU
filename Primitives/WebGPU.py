@@ -20,7 +20,7 @@ class WebGPU:
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         #self.create_uniform_buffers()
         self.pipeline=Pipelines.create_line_pipeline("line", self.device)
-
+        Pipelines.create_diffuse_pipeline("diffuse", self.device)
 
     def init_context(self, power_preference="high-performance", limits=None):
         # Request an adapter and device
