@@ -13,6 +13,29 @@ which will generate a pipeline for this object and draw into the current context
 import numpy as np
 import wgpu
 
+def _circle_table(n):
+    # Determine the angle between samples
+    angle = 2.0 * np.pi / (n if n != 0 else 1)
+    
+    # Allocate list for n samples, plus duplicate of first entry at the end
+    cs = np.zeros((n + 1, 2), dtype=np.float32)
+    
+    # Compute cos and sin around the circle
+    cs[0, 0] = 1.0  # cost
+    cs[0, 1] = 0.0  # sint
+
+    for i in range(1, n):
+        cs[i, 1] = np.sin(angle * i)  # sint
+        cs[i, 0] = np.cos(angle * i)  # cost
+    
+    # Last sample is duplicate of the first
+    cs[n, 1] = cs[0, 1]  # sint
+    cs[n, 0] = cs[0, 0]  # cost
+    
+    return cs
+
+
+
 
 class _primitive:
     def __init__(self):
@@ -195,6 +218,123 @@ class Primitives:
         prim = _primitive()
         prim.buffer = vertex_buffer
         prim.draw_size = len(data_array)
+        prim.draw_type = "triangle"
+        cls._primitives[name] = prim
+
+    @classmethod
+    def create_cone(cls, name, device, base, height, slices, stacks):
+        z_step = height / (stacks if stacks > 0 else 1)
+        r_step = base / (stacks if stacks > 0 else 1)
+
+        cosn = height / np.sqrt(height * height + base * base)
+        sinn = base / np.sqrt(height * height + base * base)
+
+        cs = _circle_table(slices)
+
+        z0 = 0.0
+        z1 = z_step
+
+        r0 = base
+        r1 = r0 - r_step
+
+        du = 1.0 / stacks
+        dv = 1.0 / slices
+
+        u = 1.0
+        v = 1.0
+
+        data = []
+
+        for i in range(stacks):
+            for j in range(slices):
+                theta1 = j * 2.0 * np.pi / slices
+                theta2 = (j + 1) * 2.0 * np.pi / slices
+
+                # First triangle
+                d1 = [0] * 8
+                d1[6] = u
+                d1[7] = v
+                d1[3] = cs[j, 0] * cosn  # nx
+                d1[4] = cs[j, 1] * sinn  # ny
+                d1[5] = sinn             # nz
+                d1[0] = cs[j, 0] * r0    # x
+                d1[1] = cs[j, 1] * r0    # y
+                d1[2] = z0               # z
+                data.append(d1)
+
+                d2 = [0] * 8
+                d2[6] = u
+                d2[7] = v - dv
+                d2[3] = cs[j, 0] * cosn  # nx
+                d2[4] = cs[j, 1] * sinn  # ny
+                d2[5] = sinn             # nz
+                d2[0] = cs[j, 0] * r1    # x
+                d2[1] = cs[j, 1] * r1    # y
+                d2[2] = z1               # z
+                data.append(d2)
+
+                d3 = [0] * 8
+                d3[6] = u - du
+                d3[7] = v - dv
+                d3[3] = cs[j + 1, 0] * cosn  # nx
+                d3[4] = cs[j + 1, 1] * sinn  # ny
+                d3[5] = sinn                 # nz
+                d3[0] = cs[j + 1, 0] * r1    # x
+                d3[1] = cs[j + 1, 1] * r1    # y
+                d3[2] = z1                   # z
+                data.append(d3)
+
+                # Second triangle
+                d4 = [0] * 8
+                d4[6] = u
+                d4[7] = v
+                d4[3] = cs[j, 0] * cosn  # nx
+                d4[4] = cs[j, 1] * sinn  # ny
+                d4[5] = sinn             # nz
+                d4[0] = cs[j, 0] * r0    # x
+                d4[1] = cs[j, 1] * r0    # y
+                d4[2] = z0               # z
+                data.append(d4)
+
+                d5 = [0] * 8
+                d5[6] = u - du
+                d5[7] = v - dv
+                d5[3] = cs[j + 1, 0] * cosn  # nx
+                d5[4] = cs[j + 1, 1] * sinn  # ny
+                d5[5] = sinn                 # nz
+                d5[0] = cs[j + 1, 0] * r1    # x
+                d5[1] = cs[j + 1, 1] * r1    # y
+                d5[2] = z1                   # z
+                data.append(d5)
+
+                d6 = [0] * 8
+                d6[6] = u - du
+                d6[7] = v
+                d6[3] = cs[j + 1, 0] * cosn  # nx
+                d6[4] = cs[j + 1, 1] * sinn  # ny
+                d6[5] = sinn                 # nz
+                d6[0] = cs[j + 1, 0] * r0    # x
+                d6[1] = cs[j + 1, 1] * r0    # y
+                d6[2] = z0                   # z
+                data.append(d6)
+
+                u -= du
+
+            v -= dv
+            u = 1.0
+            z0 = z1
+            z1 += z_step
+            r0 = r1
+            r1 -= r_step
+
+        data_array = np.array(data, dtype=np.float32)
+
+        vertex_buffer = device.create_buffer_with_data(
+            data=data_array, usage=wgpu.BufferUsage.VERTEX
+        )
+        prim = _primitive()
+        prim.buffer = vertex_buffer
+        prim.draw_size = len(data_array) // 8
         prim.draw_type = "triangle"
         cls._primitives[name] = prim
 

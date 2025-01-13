@@ -34,6 +34,7 @@ class WebGPU:
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
         Primitives.load_default_primitives(self.device)
+        Primitives.create_cone("cone", self.device, 0.5, 10 ,20,50)
         self.line_pipeline = Pipelines.create_line_pipeline("line", self.device)
         self.diffuse_tri_strip_pipeline=Pipelines.create_diffuse_triangle_strip_pipeline("diffuse_tri_strip", self.device)
         self.diffuse_tri_pipeline=Pipelines.create_diffuse_triangle_pipeline("diffuse_tri", self.device)
@@ -231,7 +232,7 @@ class WebGPU:
         render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [], 0, 999999)
         
 
-        prims=["sphere","cube","dodecahedron","troll","teapot","bunny","buddah","dragon","football","tetrahedron","octahedron","icosahedron"]
+        prims=["cone","sphere","cube","dodecahedron","troll","teapot","bunny","buddah","dragon","football","tetrahedron","octahedron","icosahedron"]
         Primitives.draw(render_pass,prims[self.prim_index])
 
 
