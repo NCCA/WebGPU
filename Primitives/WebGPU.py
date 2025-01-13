@@ -1,20 +1,34 @@
 import nccapy
 import numpy as np
 import wgpu
-
+import math
 from Primitives import Primitives
 from Pipelines import Pipelines
+
+def perspective_webgpu(fov_y, aspect, z_near, z_far):
+    fov_y = math.radians(fov_y)
+    f = 1.0 / math.tan(fov_y / 2)
+    return nccapy.Mat4.from_list(
+        [[f / aspect, 0,  0,                           0],
+        [0,          f,  0,                           0],
+        [0,          0,  z_far / (z_near - z_far),   -1],
+        [0,          0,  (z_near * z_far) / (z_near - z_far),  0]]
+    )
+
 
 
 class WebGPU:
     def __init__(self, texture_size=(1024, 1024, 1)):
         self.rotation = 0.0
+        self.prim_index=0
         self.mouse_rotation = nccapy.Mat4()
         self.texture_size = texture_size
         self.init_context()
-        self.persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
+        self.persp = perspective_webgpu(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
+        self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
+        print(self.persp,self.persp1)
         self.lookat = nccapy.look_at(
-            nccapy.Vec3(0, 0, 12), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+            nccapy.Vec3(0, 0, -5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
 
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
@@ -180,7 +194,7 @@ class WebGPU:
     def set_mouse(self, x, y, model_pos):
         rot_x = nccapy.Mat4.rotate_x(x)
         rot_y = nccapy.Mat4.rotate_y(y)
-        rotation = rot_x @ rot_y
+        rotation = rot_y @ rot_x
         rotation.m[3][0] = model_pos.x
         rotation.m[3][1] = model_pos.y
         rotation.m[3][2] = model_pos.z
@@ -215,7 +229,10 @@ class WebGPU:
         render_pass.set_pipeline(self.diffuse_tri_pipeline.pipeline)
         render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [], 0, 999999)
         render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [], 0, 999999)
-        Primitives.draw(render_pass,"bunny")
+        
+
+        prims=["sphere","cube","dodecahedron","troll","teapot","bunny","buddah","dragon","football","tetrahedron","octahedron","icosahedron"]
+        Primitives.draw(render_pass,prims[self.prim_index])
 
 
         render_pass.end()

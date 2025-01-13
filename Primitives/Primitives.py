@@ -44,7 +44,13 @@ class Primitives:
                ["dodecahedron","PrimData/dodecahedron.npy"],
                ["troll","PrimData/troll.npy"],
                ["teapot","PrimData/teapot.npy"],
-               ["bunny","PrimData/bunny.npy"] 
+               ["bunny","PrimData/bunny.npy"],
+               ["buddah","PrimData/buddah.npy"],
+               ["dragon","PrimData/dragon.npy"], 
+               ["football","PrimData/football.npy"], 
+               ["tetrahedron","PrimData/tetrahedron.npy"], 
+               ["octahedron","PrimData/octahedron.npy"],
+               ["icosahedron","PrimData/icosahedron.npy"],
                ]
         for p in prims:
             prim_data=np.load(p[1])

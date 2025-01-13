@@ -123,11 +123,11 @@ class MainWindow(QMainWindow):
 
         elif numPixels.x() < 0:
             self.modelPos.z -= self.ZOOM
-        if numPixels.y() > 0:
-            self.modelPos.x += self.ZOOM
+        # if numPixels.y() > 0:
+        #     self.modelPos.x += self.ZOOM
 
-        elif numPixels.y() < 0:
-            self.modelPos.x -= self.ZOOM
+        # elif numPixels.y() < 0:
+        #     self.modelPos.x -= self.ZOOM
 
         self.update()
 
@@ -140,8 +140,19 @@ class MainWindow(QMainWindow):
             self.spinYFace = 0
             self.modelPos.set(0, 0, 0)
         elif key == Qt.Key.Key_L:
-            self.transformLight ^= True
+            self.transformLight ^= True        
+        elif key == Qt.Key.Key_Left:
+            self.webgpu.prim_index -= 1
+            if self.webgpu.prim_index < 0:
+                self.webgpu.prim_index=0
+
+        elif key == Qt.Key.Key_Right:
+            self.webgpu.prim_index += 1
+            if self.webgpu.prim_index >= 11:
+                self.webgpu.prim_index=11
+
         self.update()
+
 
 
 def main():
