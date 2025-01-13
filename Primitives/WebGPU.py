@@ -19,8 +19,11 @@ class WebGPU:
 
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
+        Primitives.load_default_primitives(self.device)
         self.line_pipeline = Pipelines.create_line_pipeline("line", self.device)
-        self.diffuse_pipeline=Pipelines.create_diffuse_pipeline("diffuse", self.device)
+        self.diffuse_tri_strip_pipeline=Pipelines.create_diffuse_triangle_strip_pipeline("diffuse_tri_strip", self.device)
+        self.diffuse_tri_pipeline=Pipelines.create_diffuse_triangle_pipeline("diffuse_tri", self.device)
+       
         self.init_buffers()
 
     def init_buffers(self):
@@ -28,13 +31,25 @@ class WebGPU:
         self.line_pipeline.uniform_data["colour"] = np.array([1.0, 1.0, 0.0])
 
         # setup the buffer for the diffuse pipeline
-        self.diffuse_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
 
-        self.diffuse_pipeline.uniform_data[1]["light_pos"] = np.array([2.0, 2.0, 0.0])
-        self.diffuse_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
+        self.diffuse_tri_strip_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0])
+        self.diffuse_tri_strip_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
+
+        # setup the buffer for the diffuse tri pipeline
+        self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
+
+        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0])
+        self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
+
+
+
 
 
     def init_context(self, power_preference="high-performance", limits=None):
@@ -109,32 +124,56 @@ class WebGPU:
 
     
 
-        self.diffuse_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
 
         mv_matrix = (
             (self.lookat @ self.mouse_rotation)
             .get_numpy()
             .astype(np.float32)
         )
-        self.diffuse_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
         nm = (self.lookat @ self.mouse_rotation)
         nm.inverse()
         nm.transpose()
-        self.diffuse_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
 
-        self.diffuse_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
+        self.diffuse_tri_strip_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
 
         self.device.queue.write_buffer(
-            buffer=self.diffuse_pipeline.uniform_buffer[0],
+            buffer=self.diffuse_tri_strip_pipeline.uniform_buffer[0],
             buffer_offset=0,
-            data=self.diffuse_pipeline.uniform_data[0].tobytes(),
+            data=self.diffuse_tri_strip_pipeline.uniform_data[0].tobytes(),
         )
 
         self.device.queue.write_buffer(
-            buffer=self.diffuse_pipeline.uniform_buffer[1],
+            buffer=self.diffuse_tri_strip_pipeline.uniform_buffer[1],
             buffer_offset=0,
-            data=self.diffuse_pipeline.uniform_data[1].tobytes(),
+            data=self.diffuse_tri_strip_pipeline.uniform_data[1].tobytes(),
         )
+
+
+        self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
+        self.diffuse_tri_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
+        nm = (self.lookat @ self.mouse_rotation)
+        nm.inverse()
+        nm.transpose()
+        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
+
+        self.diffuse_tri_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
+
+        self.device.queue.write_buffer(
+            buffer=self.diffuse_tri_pipeline.uniform_buffer[0],
+            buffer_offset=0,
+            data=self.diffuse_tri_pipeline.uniform_data[0].tobytes(),
+        )
+
+        self.device.queue.write_buffer(
+            buffer=self.diffuse_tri_pipeline.uniform_buffer[1],
+            buffer_offset=0,
+            data=self.diffuse_tri_pipeline.uniform_data[1].tobytes(),
+        )
+
+
 
 
 
@@ -173,17 +212,13 @@ class WebGPU:
         Primitives.draw(render_pass, "grid")
 
 
-        render_pass.set_pipeline(self.diffuse_pipeline.pipeline)
-        render_pass.set_bind_group(0, self.diffuse_pipeline.bind_group[0], [], 0, 999999)
-        render_pass.set_bind_group(1, self.diffuse_pipeline.bind_group[1], [], 0, 999999)
-        Primitives.draw(render_pass, "sphere")
+        render_pass.set_pipeline(self.diffuse_tri_pipeline.pipeline)
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [], 0, 999999)
+        render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [], 0, 999999)
+        Primitives.draw(render_pass,"bunny")
 
 
         render_pass.end()
-
-
-
-
 
         # Submit the commands
         self.device.queue.submit([command_encoder.finish()])

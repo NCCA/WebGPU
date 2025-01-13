@@ -26,6 +26,36 @@ class Primitives:
     # and generate pipelines for drawing
     _primitives = {}
 
+
+    @classmethod
+    def _gen_prim(cls, device, data, draw_type):
+        vertex_buffer = device.create_buffer_with_data(
+            data=data, usage=wgpu.BufferUsage.VERTEX
+        )
+        prim = _primitive()
+        prim.buffer = vertex_buffer
+        prim.draw_size = len(data)//8
+        prim.draw_type = draw_type
+        return prim
+
+    @classmethod
+    def load_default_primitives(cls, device):
+        prims=[["cube","PrimData/cube.npy"],
+               ["dodecahedron","PrimData/dodecahedron.npy"],
+               ["troll","PrimData/troll.npy"],
+               ["teapot","PrimData/teapot.npy"],
+               ["bunny","PrimData/bunny.npy"] 
+               ]
+        for p in prims:
+            prim_data=np.load(p[1])
+            cls._primitives[p[0]] = cls._gen_prim(device, prim_data, "triangle")
+        
+        # prim_data=np.load("PrimData/cube.npy")
+        # cls._primitives["cube"] = cls._gen_prim(device, prim_data, "triangle")
+        # prim_data=np.load("PrimData/dodecahedron.npy")
+        # cls._primitives["dodecahedron"] = cls._gen_prim(device, prim_data, "triangle")
+
+
     @classmethod
     def create_line_grid(cls, name, device, width, depth, steps):
         # Calculate the step size for each grid value
@@ -78,7 +108,7 @@ class Primitives:
                 render_pass.draw(prim.draw_size, 1, 0, 0)
 
         except KeyError:
-            print("Primitive not found")
+            print(f"Primitive {name} not found")
             return
 
 
