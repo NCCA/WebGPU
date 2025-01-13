@@ -5,22 +5,37 @@ import wgpu
 from Primitives import Primitives
 from Pipelines import Pipelines
 
+
 class WebGPU:
     def __init__(self, texture_size=(1024, 1024, 1)):
         self.rotation = 0.0
         self.mouse_rotation = nccapy.Mat4()
         self.texture_size = texture_size
         self.init_context()
-        self.load_shader("line_shader.wgsl")
         self.persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
         self.lookat = nccapy.look_at(
-    nccapy.Vec3(0, 4, 12), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
-)
+            nccapy.Vec3(0, 0, 12), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+        )
 
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
-        #self.create_uniform_buffers()
-        self.pipeline=Pipelines.create_line_pipeline("line", self.device)
-        Pipelines.create_diffuse_pipeline("diffuse", self.device)
+        Primitives.create_sphere("sphere", self.device, 1.0, 200)
+        self.line_pipeline = Pipelines.create_line_pipeline("line", self.device)
+        self.diffuse_pipeline=Pipelines.create_diffuse_pipeline("diffuse", self.device)
+        self.init_buffers()
+
+    def init_buffers(self):
+        self.line_pipeline.uniform_data["MVP"] = nccapy.Mat4().get_numpy().flatten()
+        self.line_pipeline.uniform_data["colour"] = np.array([1.0, 1.0, 0.0])
+
+        # setup the buffer for the diffuse pipeline
+        self.diffuse_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
+        self.diffuse_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
+
+        self.diffuse_pipeline.uniform_data[1]["light_pos"] = np.array([2.0, 2.0, 0.0])
+        self.diffuse_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
+
 
     def init_context(self, power_preference="high-performance", limits=None):
         # Request an adapter and device
@@ -41,23 +56,6 @@ class WebGPU:
         )
         self.depth_buffer_view = depth_texture.create_view()
 
-    def load_shader(self, shader):
-        with open(shader, "r") as f:
-            shader_code = f.read()
-        self.shader = self.device.create_shader_module(code=shader_code)
-
-    # def bind_pipeline(self):
-    #     bind_group_layout = self.pipeline.get_bind_group_layout(0)
-    #     # Create the bind group
-    #     self.bind_group = self.device.create_bind_group(
-    #         layout=bind_group_layout,
-    #         entries=[
-    #             {
-    #                 "binding": 0,  # Matches @binding(0) in the shader
-    #                 "resource": {"buffer": self.uniform_buffer},
-    #             }
-    #         ],
-    #     )
 
     def get_colour_buffer(self):
         buffer_size = (
@@ -96,16 +94,49 @@ class WebGPU:
         y = nccapy.Mat4.rotate_y(self.rotation)
         # z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = y
-        mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @ self.mouse_rotation @ rotation)
+        mvp_matrix = (
+            (self.persp @ self.lookat @ self.mouse_rotation)
             .get_numpy()
             .astype(np.float32)
         )
-        self.pipeline.uniform_data["MVP"] = mvp_matrix.flatten()
+        self.line_pipeline.uniform_data["MVP"] = mvp_matrix.flatten()
 
         self.device.queue.write_buffer(
-            buffer=self.pipeline.uniform_buffer, buffer_offset=0, data=self.pipeline.uniform_data.tobytes()
+            buffer=self.line_pipeline.uniform_buffer,
+            buffer_offset=0,
+            data=self.line_pipeline.uniform_data.tobytes(),
         )
+
+    
+
+        self.diffuse_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
+
+        mv_matrix = (
+            (self.lookat @ self.mouse_rotation)
+            .get_numpy()
+            .astype(np.float32)
+        )
+        self.diffuse_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
+        nm = (self.lookat @ self.mouse_rotation)
+        nm.inverse()
+        nm.transpose()
+        self.diffuse_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
+
+        self.diffuse_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
+
+        self.device.queue.write_buffer(
+            buffer=self.diffuse_pipeline.uniform_buffer[0],
+            buffer_offset=0,
+            data=self.diffuse_pipeline.uniform_data[0].tobytes(),
+        )
+
+        self.device.queue.write_buffer(
+            buffer=self.diffuse_pipeline.uniform_buffer[1],
+            buffer_offset=0,
+            data=self.diffuse_pipeline.uniform_data[1].tobytes(),
+        )
+
+
 
     def set_mouse(self, x, y, model_pos):
         rot_x = nccapy.Mat4.rotate_x(x)
@@ -137,39 +168,24 @@ class WebGPU:
             },
         )
         render_pass.set_viewport(0, 0, 1024, 720, 0, 1)
-        render_pass.set_pipeline(self.pipeline.pipeline)
-        render_pass.set_bind_group(0, self.pipeline.bind_group, [], 0, 999999)
+        render_pass.set_pipeline(self.line_pipeline.pipeline)
+        render_pass.set_bind_group(0, self.line_pipeline.bind_group, [], 0, 999999)
         Primitives.draw(render_pass, "grid")
+
+
+        render_pass.set_pipeline(self.diffuse_pipeline.pipeline)
+        render_pass.set_bind_group(0, self.diffuse_pipeline.bind_group[0], [], 0, 999999)
+        render_pass.set_bind_group(1, self.diffuse_pipeline.bind_group[1], [], 0, 999999)
+        Primitives.draw(render_pass, "sphere")
+
+
         render_pass.end()
+
+
+
+
 
         # Submit the commands
         self.device.queue.submit([command_encoder.finish()])
 
     # def create_uniform_buffers(self):
-    #     self.persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
-    #     self.lookat = nccapy.look_at(
-    #         nccapy.Vec3(0, 4, 12), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
-    #     )
-    #     rotation = nccapy.Mat4.rotate_y(40)
-    #     mvp_matrix = mvp_matrixncca = (
-    #         (self.persp @ self.lookat @ self.mouse_rotation @ rotation)
-    #         .get_numpy()
-    #         .astype(np.float32)
-    #     )
-
-    #     self.uniform_data = np.zeros(
-    #         (),
-    #         dtype=[
-    #             ("MVP", "float32", (16)),
-    #             ("colour", "float32", (3)),
-    #             ("padding", "float32", (1)),  # to 80 bytes
-    #         ],
-    #     )
-
-    #     self.uniform_data["MVP"] = mvp_matrix.flatten()
-    #     self.uniform_data["colour"] = np.array([1.0, 1.0, 0.0])
-    #     self.uniform_buffer = self.device.create_buffer_with_data(
-    #         data=self.uniform_data.tobytes(),
-    #         usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
-    #         label="uniform_buffer",
-    #     )
