@@ -117,16 +117,11 @@ class Primitives:
             print(f"Primitive {name} not found")
             return
 
-
     @classmethod
-    def create_sphere(cls, name, device,radius, precision):
+    def create_sphere(cls, name, device, radius, precision):
         # Sphere code based on a function Written by Paul Bourke.
         # http://astronomy.swin.edu.au/~pbourke/opengl/sphere/
-        # the next part of the code calculates the P,N,UV of the sphere for tri_strips
-
-        theta1 = 0.0
-        theta2 = 0.0
-        theta3 = 0.0
+        # the next part of the code calculates the P,N,UV of the sphere for triangles
 
         # Disallow a negative number for radius.
         if radius < 0.0:
@@ -143,30 +138,56 @@ class Primitives:
             theta1 = i * 2.0 * np.pi / precision - np.pi / 2.0
             theta2 = (i + 1) * 2.0 * np.pi / precision - np.pi / 2.0
 
-            for j in range(precision + 1):
+            for j in range(precision):
                 theta3 = j * 2.0 * np.pi / precision
+                theta4 = (j + 1) * 2.0 * np.pi / precision
 
-                nx = np.cos(theta2) * np.cos(theta3)
-                ny = np.sin(theta2)
-                nz = np.cos(theta2) * np.sin(theta3)
-                x = radius * nx
-                y = radius * ny
-                z = radius * nz
-                u = j / precision
-                v = 2.0 * (i + 1) / precision
-                data.append([x, y, z, nx, ny, nz, u, v])
+                # First triangle
+                nx1 = np.cos(theta2) * np.cos(theta3)
+                ny1 = np.sin(theta2)
+                nz1 = np.cos(theta2) * np.sin(theta3)
+                x1 = radius * nx1
+                y1 = radius * ny1
+                z1 = radius * nz1
+                u1 = j / precision
+                v1 = 2.0 * (i + 1) / precision
+                data.append([x1, y1, z1, nx1, ny1, nz1, u1, v1])
 
-                nx = np.cos(theta1) * np.cos(theta3)
-                ny = np.sin(theta1)
-                nz = np.cos(theta1) * np.sin(theta3)
-                x = radius * nx
-                y = radius * ny
-                z = radius * nz
-                u = j / precision
-                v = 2.0 * i / precision
-                data.append([x, y, z, nx, ny, nz, u, v])
+                nx2 = np.cos(theta1) * np.cos(theta3)
+                ny2 = np.sin(theta1)
+                nz2 = np.cos(theta1) * np.sin(theta3)
+                x2 = radius * nx2
+                y2 = radius * ny2
+                z2 = radius * nz2
+                u2 = j / precision
+                v2 = 2.0 * i / precision
+                data.append([x2, y2, z2, nx2, ny2, nz2, u2, v2])
 
-        data_array=np.array(data, dtype=np.float32)
+                nx3 = np.cos(theta1) * np.cos(theta4)
+                ny3 = np.sin(theta1)
+                nz3 = np.cos(theta1) * np.sin(theta4)
+                x3 = radius * nx3
+                y3 = radius * ny3
+                z3 = radius * nz3
+                u3 = (j + 1) / precision
+                v3 = 2.0 * i / precision
+                data.append([x3, y3, z3, nx3, ny3, nz3, u3, v3])
+
+                # Second triangle
+                nx4 = np.cos(theta2) * np.cos(theta4)
+                ny4 = np.sin(theta2)
+                nz4 = np.cos(theta2) * np.sin(theta4)
+                x4 = radius * nx4
+                y4 = radius * ny4
+                z4 = radius * nz4
+                u4 = (j + 1) / precision
+                v4 = 2.0 * (i + 1) / precision
+                data.append([x4, y4, z4, nx4, ny4, nz4, u4, v4])
+
+                data.append([x1, y1, z1, nx1, ny1, nz1, u1, v1])
+                data.append([x3, y3, z3, nx3, ny3, nz3, u3, v3])
+
+        data_array = np.array(data, dtype=np.float32)
 
         vertex_buffer = device.create_buffer_with_data(
             data=data_array, usage=wgpu.BufferUsage.VERTEX
@@ -176,7 +197,6 @@ class Primitives:
         prim.draw_size = len(data_array)
         prim.draw_type = "triangle"
         cls._primitives[name] = prim
-
 
 
 

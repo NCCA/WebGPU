@@ -28,7 +28,7 @@ class WebGPU:
         self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
         print(self.persp,self.persp1)
         self.lookat = nccapy.look_at(
-            nccapy.Vec3(0, 0, -5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+            nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
 
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)

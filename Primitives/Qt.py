@@ -38,10 +38,6 @@ class DrawingWidget(QWidget):
         rect1 = QRect(0, 0, size[0], size[1])
         rect2 = self.rect()
         painter.drawImage(rect2, image, rect1)
-        # Uncomment for testing purposes
-        # painter.setPen(QColor("#0000ff"))
-        # painter.setFont(QFont("Arial", 30))
-        # painter.drawText(100, 100, "This is an image")
 
 
 class MainWindow(QMainWindow):
@@ -58,7 +54,7 @@ class MainWindow(QMainWindow):
         self.origXPos = int(0)
         self.origYPos = int(0)
         self.INCREMENT = 0.01
-        self.ZOOM = 0.1
+        self.ZOOM = 0.5
         self.modelPos = nccapy.Vec3()
 
         # Create a central widget with the drawing widget
