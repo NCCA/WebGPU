@@ -15,6 +15,31 @@ def perspective_webgpu(fov_y, aspect, z_near, z_far):
         [0,          0,  (z_near * z_far) / (z_near - z_far),  0]]
     )
 
+def look_atwebgpu(eye, look, up):
+    """
+    Calculate 4x4 matrix for camera lookAt
+    """
+
+    n = look - eye
+    v = n.cross(up)
+    u = v.cross(n)
+    n.normalize()
+    v.normalize()
+    u.normalize()
+    result = nccapy.Mat4.identity()
+    result.m[0][0] = v.x
+    result.m[1][0] = v.y
+    result.m[2][0] = v.z
+    result.m[0][1] = u.x
+    result.m[1][1] = u.y
+    result.m[2][1] = u.z
+    result.m[0][2] = -n.x
+    result.m[1][2] = -n.y
+    result.m[2][2] = n.z
+    result.m[3][0] = -eye.dot(v)
+    result.m[3][1] = -eye.dot(u)
+    result.m[3][2] = eye.dot(n)
+    return result
 
 
 class WebGPU:
@@ -27,7 +52,7 @@ class WebGPU:
         self.persp = perspective_webgpu(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
         self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
         print(self.persp,self.persp1)
-        self.lookat = nccapy.look_at(
+        self.lookat = look_atwebgpu(
             nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
 

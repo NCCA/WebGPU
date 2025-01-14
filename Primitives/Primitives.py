@@ -63,28 +63,12 @@ class Primitives:
 
     @classmethod
     def load_default_primitives(cls, device):
-        # prims=[["cube","PrimData/cube.npy"],
-        #        ["dodecahedron","PrimData/dodecahedron.npy"],
-        #        ["troll","PrimData/troll.npy"],
-        #        ["teapot","PrimData/teapot.npy"],
-        #        ["bunny","PrimData/bunny.npy"],
-        #        ["buddah","PrimData/buddah.npy"],
-        #        ["dragon","PrimData/dragon.npy"], 
-        #        ["football","PrimData/football.npy"], 
-        #        ["tetrahedron","PrimData/tetrahedron.npy"], 
-        #        ["octahedron","PrimData/octahedron.npy"],
-        #        ["icosahedron","PrimData/icosahedron.npy"],
-        #        ]
         prims=np.load("PrimData/Primitives.npz")
         print(prims)
         for p in prims.items():
             prim_data=p[1]
             cls._primitives[p[0]] = cls._gen_prim(device, prim_data, "triangle")
         
-        # prim_data=np.load("PrimData/cube.npy")
-        # cls._primitives["cube"] = cls._gen_prim(device, prim_data, "triangle")
-        # prim_data=np.load("PrimData/dodecahedron.npy")
-        # cls._primitives["dodecahedron"] = cls._gen_prim(device, prim_data, "triangle")
 
 
     @classmethod
