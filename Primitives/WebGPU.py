@@ -4,6 +4,7 @@ import wgpu
 import math
 from Primitives import Primitives
 from Pipelines import Pipelines
+from FirstPersonCamera import FirstPersonCamera
 
 def perspective_webgpu(fov_y, aspect, z_near, z_far):
     fov_y = math.radians(fov_y)
@@ -49,12 +50,12 @@ class WebGPU:
         self.mouse_rotation = nccapy.Mat4()
         self.texture_size = texture_size
         self.init_context()
-        self.persp = perspective_webgpu(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
-        self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
-        print(self.persp,self.persp1)
-        self.lookat = look_atwebgpu(
-            nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
-        )
+        # self.persp = perspective_webgpu(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
+        # self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
+        # print(self.persp,self.persp1)
+        # self.lookat = look_atwebgpu(
+        #     nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+        # )
 
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
@@ -65,6 +66,7 @@ class WebGPU:
         self.diffuse_tri_pipeline=Pipelines.create_diffuse_triangle_pipeline("diffuse_tri", self.device)
        
         self.init_buffers()
+        self.camera = FirstPersonCamera(nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0),45.0)
 
     def init_buffers(self):
         self.line_pipeline.uniform_data["MVP"] = nccapy.Mat4().get_numpy().flatten()
@@ -150,7 +152,7 @@ class WebGPU:
         # z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = y
         mvp_matrix = (
-            (self.persp @ self.lookat @ self.mouse_rotation)
+            (self.camera.get_vp() @ self.mouse_rotation)
             .get_numpy()
             .astype(np.float32)
         )
@@ -167,12 +169,12 @@ class WebGPU:
         self.diffuse_tri_strip_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
 
         mv_matrix = (
-            (self.lookat @ self.mouse_rotation)
+            (self.camera.view @ self.mouse_rotation)
             .get_numpy()
             .astype(np.float32)
         )
         self.diffuse_tri_strip_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
-        nm = (self.lookat @ self.mouse_rotation)
+        nm = (self.camera.view @ self.mouse_rotation)
         nm.inverse()
         nm.transpose()
         self.diffuse_tri_strip_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
@@ -194,7 +196,7 @@ class WebGPU:
 
         self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
         self.diffuse_tri_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
-        nm = (self.lookat @ self.mouse_rotation)
+        nm = (self.camera.view @ self.mouse_rotation)
         nm.inverse()
         nm.transpose()
         self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
