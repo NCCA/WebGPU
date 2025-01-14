@@ -9,6 +9,7 @@ class FirstPersonCamera :
         self.front=nccapy.Vec3()
         self.up=nccapy.Vec3()
         self.right=nccapy.Vec3()
+        self.front=nccapy.Vec3()
         self.yaw=-90.0
         self.pitch=0.0
         self.speed=2.5
@@ -21,20 +22,38 @@ class FirstPersonCamera :
         self.projection=self.set_projection(self.fov,self.aspect,self.near,self.far)
         self.view=self._look_at(self.eye,self.look,self.world_up)
 
+    def process_mouse_movement(self,diffx,diffy,_constrainPitch=True) :
+        diffx *= self.sensitivity
+        diffy *= self.sensitivity
+
+        self.yaw   += diffx
+        self.pitch += diffy
+
+        # Make sure that when pitch is out of bounds, screen doesn't get flipped
+        if _constrainPitch :
+            if self.pitch > 89.0 :
+                self.pitch = 89.0
+            if self.pitch < -89.0 :
+                self.pitch = -89.0
+            
+        self._update_camera_vectors()
+
+
     def _update_camera_vectors(self) :
+        
         pitch = math.radians(self.pitch)
         yaw = math.radians(self.yaw)
         self.front.x = math.cos(yaw) * math.cos(pitch)
-        self.front.m_y = math.sin(pitch)
-        self.front.m_z = math.sin(yaw) * math.cos(pitch)
-        self.front=self.front.normalize()
+        self.front.y = math.sin(pitch)
+        self.front.z = math.sin(yaw) * math.cos(pitch)
+        self.front.normalize()
         # Also re-calculate the Right and Up vector
         self.right = self.front.cross(self.world_up)  
         self.up    = self.right.cross(self.front)
         # normalize as fast movement can cause issues
-        self.right=self.right.normalize()
-        self.front=self.front.normalize()
-        self.view=self._lookAt(m_eye, m_eye + m_front, m_up)
+        self.right.normalize()
+        self.front.normalize()
+        self.view=self._look_at(self.eye, self.eye + self.front, self.up)
 
     def set_projection(self,fov,aspect,near,far) :
         self.fov = math.radians(self.fov)
@@ -51,16 +70,13 @@ class FirstPersonCamera :
 
 
     def move(self,x,y,delta) :
-        velocity = self.speed * _deltaTime
+        velocity = self.speed * delta
         self.eye += self.front * velocity*x
         self.eye += self.right * velocity*y
-        self.updateCameraVectors()
+        self._update_camera_vectors()
 
     
     
-    
-
-
 
     def get_vp(self) :
         return self.projection @ self.view    

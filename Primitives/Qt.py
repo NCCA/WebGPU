@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         self.INCREMENT = 0.01
         self.ZOOM = 0.5
         self.modelPos = nccapy.Vec3()
+        self.key_pressed = set()
 
         # Create a central widget with the drawing widget
         central_widget = QWidget(self)
@@ -67,6 +68,19 @@ class MainWindow(QMainWindow):
         self.timer = self.startTimer(20)
 
     def timerEvent(self, event):
+        x=0.0
+        y=0.0
+        
+        for k in self.key_pressed :
+            if k == Qt.Key.Key_Left : 
+                y-=0.1
+            elif k == Qt.Key.Key_Right :
+                y+=0.1
+            elif k== Qt.Key.Key_Up :
+                x+=0.1
+            elif k== Qt.Key.Key_Down :
+                x-=0.1
+        self.webgpu.move_camera(x,y)
         self.webgpu.set_mouse(self.spinXFace, self.spinYFace, self.modelPos)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
@@ -86,7 +100,7 @@ class MainWindow(QMainWindow):
             self.translate = True
 
     def mouseMoveEvent(self, event):
-        if self.rotate and event.buttons() == Qt.MouseButton.LeftButton:
+        if event.buttons() == Qt.MouseButton.LeftButton:
             pos = event.position()
             diffx = int(pos.x() - self.origX)
             diffy = int(pos.y() - self.origY)
@@ -94,15 +108,7 @@ class MainWindow(QMainWindow):
             self.spinYFace += 0.5 * diffx
             self.origX = pos.x()
             self.origY = pos.y()
-            self.update()
-        elif self.translate and event.buttons() == Qt.MouseButton.RightButton:
-            pos = event.position()
-            diffX = int(pos.x() - self.origXPos)
-            diffY = int(pos.y() - self.origYPos)
-            self.origXPos = pos.x()
-            self.origYPos = pos.y()
-            self.modelPos.x += self.INCREMENT * diffX
-            self.modelPos.y -= self.INCREMENT * diffY
+            self.webgpu.update_camera_vectors(diffx,diffy)
             self.update()
 
     def mouseReleaseEvent(self, event):
@@ -127,8 +133,13 @@ class MainWindow(QMainWindow):
 
         self.update()
 
+    def keyReleaseEvent(self,event) :
+        key=event.key()
+        self.key_pressed.remove(key)
+
     def keyPressEvent(self, event):
         key = event.key()
+        self.key_pressed.add(key)
         if key == Qt.Key.Key_Escape:
             exit()
         elif key == Qt.Key.Key_Space:
@@ -137,12 +148,12 @@ class MainWindow(QMainWindow):
             self.modelPos.set(0, 0, 0)
         elif key == Qt.Key.Key_L:
             self.transformLight ^= True        
-        elif key == Qt.Key.Key_Left:
+        elif key == Qt.Key.Key_1:
             self.webgpu.prim_index -= 1
             if self.webgpu.prim_index < 0:
                 self.webgpu.prim_index=0
 
-        elif key == Qt.Key.Key_Right:
+        elif key == Qt.Key.Key_2:
             self.webgpu.prim_index += 1
             if self.webgpu.prim_index >= 11:
                 self.webgpu.prim_index=11

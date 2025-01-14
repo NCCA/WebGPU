@@ -215,8 +215,11 @@ class WebGPU:
             data=self.diffuse_tri_pipeline.uniform_data[1].tobytes(),
         )
 
+    def update_camera_vectors(self,diffx,diffy) :
+        self.camera.process_mouse_movement(diffx,diffy)
 
-
+    def move_camera(self,x,y,delta=0.1) :
+        self.camera.move(x,y,delta)
 
 
     def set_mouse(self, x, y, model_pos):
