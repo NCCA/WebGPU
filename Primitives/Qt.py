@@ -67,21 +67,23 @@ class MainWindow(QMainWindow):
         self.resize(1024, 720)
         self.timer = self.startTimer(20)
 
+    def resizeEvent(self, event):
+        self.webgpu.resize(event.size().width(), event.size().height())
+
     def timerEvent(self, event):
-        x=0.0
-        y=0.0
-        
-        for k in self.key_pressed :
-            if k == Qt.Key.Key_Left : 
-                y-=0.1
-            elif k == Qt.Key.Key_Right :
-                y+=0.1
-            elif k== Qt.Key.Key_Up :
-                x+=0.1
-            elif k== Qt.Key.Key_Down :
-                x-=0.1
-        self.webgpu.move_camera(x,y)
-        self.webgpu.set_mouse(self.spinXFace, self.spinYFace, self.modelPos)
+        x = 0.0
+        y = 0.0
+
+        for k in self.key_pressed:
+            if k == Qt.Key.Key_Left:
+                y -= 0.1
+            elif k == Qt.Key.Key_Right:
+                y += 0.1
+            elif k == Qt.Key.Key_Up:
+                x += 0.1
+            elif k == Qt.Key.Key_Down:
+                x -= 0.1
+        self.webgpu.move_camera(x, y)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
         self.drawing_widget.buffer = self.webgpu.get_colour_buffer()
@@ -108,7 +110,7 @@ class MainWindow(QMainWindow):
             self.spinYFace += 0.5 * diffx
             self.origX = pos.x()
             self.origY = pos.y()
-            self.webgpu.update_camera_vectors(diffx,diffy)
+            self.webgpu.update_camera_vectors(diffx, diffy)
             self.update()
 
     def mouseReleaseEvent(self, event):
@@ -133,8 +135,8 @@ class MainWindow(QMainWindow):
 
         self.update()
 
-    def keyReleaseEvent(self,event) :
-        key=event.key()
+    def keyReleaseEvent(self, event):
+        key = event.key()
         self.key_pressed.remove(key)
 
     def keyPressEvent(self, event):
@@ -147,19 +149,18 @@ class MainWindow(QMainWindow):
             self.spinYFace = 0
             self.modelPos.set(0, 0, 0)
         elif key == Qt.Key.Key_L:
-            self.transformLight ^= True        
+            self.transformLight ^= True
         elif key == Qt.Key.Key_1:
             self.webgpu.prim_index -= 1
             if self.webgpu.prim_index < 0:
-                self.webgpu.prim_index=0
+                self.webgpu.prim_index = 0
 
         elif key == Qt.Key.Key_2:
             self.webgpu.prim_index += 1
             if self.webgpu.prim_index >= 11:
-                self.webgpu.prim_index=11
+                self.webgpu.prim_index = 11
 
         self.update()
-
 
 
 def main():

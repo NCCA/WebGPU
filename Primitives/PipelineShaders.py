@@ -10,7 +10,7 @@ line_shader = """
 struct Uniforms 
 {
     MVP : mat4x4<f32>,
-    vertex_colour : vec3<f32>
+    vertex_colour : vec4<f32>
 };
 
 struct VertexInput 
@@ -21,7 +21,7 @@ struct VertexInput
 struct VertexOutput 
 {
     @builtin(position) position : vec4<f32>,
-    @location(0) colour : vec3<f32>
+    @location(0) colour : vec4<f32>
 };
 
 
@@ -37,7 +37,7 @@ fn vertex_main(input : VertexInput) -> VertexOutput
 
 struct FragmentInput 
 {
-    @location(0) colour : vec3<f32>
+    @location(0) colour : vec4<f32>
 };
 
 struct FragmentOutput 
@@ -49,7 +49,7 @@ struct FragmentOutput
 fn fragment_main(input : FragmentInput) -> FragmentOutput 
 {
     var output : FragmentOutput;
-    output.colour = vec4<f32>(input.colour, 1.0);
+    output.colour = input.colour;
     return output;
 }
 """
@@ -63,13 +63,13 @@ struct VertexUniforms
     MVP : mat4x4<f32>,
     model_view : mat4x4<f32>,
     normal_matrix : mat4x4<f32>,
-    colour : vec3<f32>,
+    colour : vec4<f32>
 };
 
 struct LightUniforms
 {
-    light_pos : vec3<f32>,
-    light_diffuse : vec3<f32>,
+    light_pos : vec4<f32>,
+    light_diffuse : vec4<f32>
 };
 
 
@@ -112,8 +112,7 @@ struct FragmentInput
 {
     @location(0) normal : vec3<f32>,
     @location(1) uv : vec2<f32>,
-    @location(2) frag_pos : vec3<f32>
-    
+    @location(2) frag_pos : vec3<f32> 
 };
 
 struct FragmentOutput 
@@ -126,10 +125,11 @@ fn fragment_main(input : FragmentInput) -> FragmentOutput
 {
     var output : FragmentOutput;
     let N = normalize(input.normal);
-    let L = normalize(lightUniforms.light_pos - input.frag_pos);
+    let L = normalize(lightUniforms.light_pos.rgb - input.frag_pos);
     let diffuse = max(dot(N,L), 0.0);
-
-    output.colour  += vec4<f32>(vertexUniforms.colour *lightUniforms.light_diffuse *diffuse, 1.0);
+    let rgb = vertexUniforms.colour.rgb *lightUniforms.light_diffuse.rgb *diffuse;
+    //output.colour  = vec4<f32>(vertexUniforms.colour);
+    output.colour  = vec4<f32>(rgb,1.0);
     return output;
 }
 

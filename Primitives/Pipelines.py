@@ -20,27 +20,28 @@ _default_depth_stencil = {
 _default_multisample = {"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False}
 _default_layout = "auto"
 
-_primitive_line_list  = {
-            "topology": wgpu.PrimitiveTopology.line_list,
-            "front_face": wgpu.FrontFace.ccw,
-            "cull_mode": wgpu.CullMode.none,
-        }
+_primitive_line_list = {
+    "topology": wgpu.PrimitiveTopology.line_list,
+    "front_face": wgpu.FrontFace.ccw,
+    "cull_mode": wgpu.CullMode.none,
+}
 
-_primitive_triangle_list  = {
-            "topology": wgpu.PrimitiveTopology.triangle_list,
-            "front_face": wgpu.FrontFace.ccw,
-            "cull_mode": wgpu.CullMode.none,
-        }
+_primitive_triangle_list = {
+    "topology": wgpu.PrimitiveTopology.triangle_list,
+    "front_face": wgpu.FrontFace.ccw,
+    "cull_mode": wgpu.CullMode.none,
+}
 
-_primitive_triangle_strip  = {
-            "topology": wgpu.PrimitiveTopology.triangle_strip,
-            "front_face": wgpu.FrontFace.ccw,
-            "cull_mode": wgpu.CullMode.none,
-        }
+_primitive_triangle_strip = {
+    "topology": wgpu.PrimitiveTopology.triangle_strip,
+    "front_face": wgpu.FrontFace.ccw,
+    "cull_mode": wgpu.CullMode.none,
+}
 
-
+_TEXTURE_FORMAT = wgpu.TextureFormat.rgba8unorm
 
 _FLOAT_SIZE = np.dtype(np.float32).itemsize
+
 
 class PipeLineException(Exception):
     pass
@@ -56,6 +57,7 @@ class _pipelineEntry:
         self.bind_group = bind_group
         self.uniform_buffer = uniform_buffer
         self.uniform_data = uniform_data
+
 
 
 class Pipelines:
@@ -77,19 +79,17 @@ class Pipelines:
             "entry_point": "vertex_main",
             "buffers": [
                 {
-                    "array_stride": 3 * _FLOAT_SIZE, # 3 floats * 4 bytes
-                    "attributes": [
-                        {"shader_location": 0, "offset": 0, "format": "float32x3"},
-                    ],
+                    "array_stride": 3 * _FLOAT_SIZE,  # 3 floats * 4 bytes
+                    "attributes": [{"shader_location": 0, "offset": 0, "format": "float32x3"}],
                 }
             ],
         }
         fragment = {
             "module": shader,
             "entry_point": "fragment_main",
-            "targets": [{"format": wgpu.TextureFormat.rgba8unorm}],
+            "targets": [{"format": _TEXTURE_FORMAT}],
         }
-        
+
         pipeline = device.create_render_pipeline(
             label=label,
             layout=_default_layout,
@@ -101,14 +101,7 @@ class Pipelines:
         )
 
         # Create a uniform buffer
-        uniform_data = np.zeros(
-            (),
-            dtype=[
-                ("MVP", "float32", (16)),
-                ("colour", "float32", (3)),
-                ("padding", "float32", (1)),  # to 80 bytes
-            ],
-        )
+        uniform_data = np.zeros((), dtype=[("MVP", "float32", (16)), ("colour", "float32", (4))])
 
         uniform_buffer = device.create_buffer_with_data(
             data=uniform_data.tobytes(),
@@ -137,20 +130,119 @@ class Pipelines:
         cls._pipelines[name] = pipeline_entry
         return pipeline_entry
 
+    #     @classmethod
+    #     def create_diffuse_triangle_strip_pipeline(cls, name, device):
+    #         shader = device.create_shader_module(code=diffuse_shader)
+    #         label = "diffuse_triangle_strip_pipeline"
+    #         vertex = {
+    #             "module": shader,
+    #             "entry_point": "vertex_main",
+    #             "buffers": [
+    #                 {
+    #                     "array_stride": 8  * _FLOAT_SIZE, #x,y,z nx,ny,nz,u,v
+    #                     "attributes": [
+    #                         {"shader_location": 0, "offset": 0*_FLOAT_SIZE, "format": "float32x3"},
+    #                         {"shader_location": 1, "offset": 3*_FLOAT_SIZE, "format": "float32x3"},
+    #                         {"shader_location": 2, "offset": 6*_FLOAT_SIZE, "format": "float32x2"},
+    #                     ],
+    #                 }
+    #             ],
+    #         }
+    #         fragment = {
+    #             "module": shader,
+    #             "entry_point": "fragment_main",
+    #             "targets": [{"format": _TEXTURE_FORMAT}],
+    #         }
+
+    #         pipeline = device.create_render_pipeline(
+    #             label=label,
+    #             layout=_default_layout,
+    #             vertex=vertex,
+    #             fragment=fragment,
+    #             primitive=_primitive_triangle_strip,
+    #             depth_stencil=_default_depth_stencil,
+    #             multisample=_default_multisample,
+    #         )
+
+    #         # Create a uniform buffer
+    #         vertex_uniform_data = np.zeros(
+    #             (),
+    #             dtype=[
+    #                 ("MVP", "float32", (16)),
+    #                 ("model_view", "float32", (16)),
+    #                 ("normal_matrix", "float32", (16)), # need 4x4 for mat3
+    #                 ("colour", "float32", (4)),
+    #                 ("padding", "float32", (12)),  # to 208
+    #                 ],
+    #         )
+
+    #         vertex_uniform_buffer = device.create_buffer_with_data(
+    #             data=vertex_uniform_data.tobytes(),
+    #             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
+    #             label="vertex_uniform_data",
+    #         )
+
+    #         # Create a uniform buffer
+    #         light_uniform_data = np.zeros(
+    #             (),
+    #             dtype=[
+    #                 ("light_pos", "float32", (4)),
+    #                 ("light_diffuse", "float32", (4)),
+    #                 ],
+    #         )
+
+    #         light_uniform_buffer = device.create_buffer_with_data(
+    #             data=light_uniform_data.tobytes(),
+    #             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
+    #             label="light_uniform_data",
+    #         )
+
+    #         bind_group_layout_0 = pipeline.get_bind_group_layout(0)
+    #         bind_group_layout_1 = pipeline.get_bind_group_layout(1)
+    #         # Create the bind group
+    #         bind_group_0 = device.create_bind_group(
+    #             layout=bind_group_layout_0,
+    #             entries=[
+    #                 {
+    #                     "binding": 0,  # Matches @binding(0) in the shader
+    #                     "resource": {"buffer": vertex_uniform_buffer},
+    #                 }
+    #             ],
+    #         )
+
+    #         bind_group_1 = device.create_bind_group(
+    #             layout=bind_group_layout_1,
+    #             entries=[
+    #                 {
+    #                     "binding": 0,  # Matches @binding(0) in the shader
+    #                     "resource": {"buffer": light_uniform_buffer},
+    #                 }
+    #             ],
+    #         )
+
+    #         pipeline_entry = _pipelineEntry(
+    #             pipeline=pipeline,
+    #             bind_group=[bind_group_0, bind_group_1],
+    #             uniform_buffer=[vertex_uniform_buffer, light_uniform_buffer],
+    #             uniform_data=[vertex_uniform_data, light_uniform_data],
+    #         )
+    #         cls._pipelines[name] = pipeline_entry
+    #         return pipeline_entry
+
     @classmethod
-    def create_diffuse_triangle_strip_pipeline(cls, name, device):
+    def create_diffuse_triangle_pipeline(cls, name, device):
         shader = device.create_shader_module(code=diffuse_shader)
-        label = "diffuse_triangle_strip_pipeline"
+        label = "diffuse_triangle_pipeline"
         vertex = {
             "module": shader,
             "entry_point": "vertex_main",
             "buffers": [
                 {
-                    "array_stride": 8  * _FLOAT_SIZE, #x,y,z nx,ny,nz,u,v
+                    "array_stride": 8 * _FLOAT_SIZE,  # x,y,z nx,ny,nz,u,v
                     "attributes": [
-                        {"shader_location": 0, "offset": 0*_FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 1, "offset": 3*_FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 2, "offset": 6*_FLOAT_SIZE, "format": "float32x2"},
+                        {"shader_location": 0, "offset": 0 * _FLOAT_SIZE, "format": "float32x3"},
+                        {"shader_location": 1, "offset": 3 * _FLOAT_SIZE, "format": "float32x3"},
+                        {"shader_location": 2, "offset": 6 * _FLOAT_SIZE, "format": "float32x2"},
                     ],
                 }
             ],
@@ -158,18 +250,10 @@ class Pipelines:
         fragment = {
             "module": shader,
             "entry_point": "fragment_main",
-            "targets": [{"format": wgpu.TextureFormat.rgba8unorm}],
+            "targets": [{"format": _TEXTURE_FORMAT}],
         }
-        
-        pipeline = device.create_render_pipeline(
-            label=label,
-            layout=_default_layout,
-            vertex=vertex,
-            fragment=fragment,
-            primitive=_primitive_triangle_strip,
-            depth_stencil=_default_depth_stencil,
-            multisample=_default_multisample,
-        )
+
+
 
         # Create a uniform buffer
         vertex_uniform_data = np.zeros(
@@ -177,26 +261,27 @@ class Pipelines:
             dtype=[
                 ("MVP", "float32", (16)),
                 ("model_view", "float32", (16)),
-                ("normal_matrix", "float32", (16)), # need 4x4 for mat3 
-                ("colour", "float32", (3)),
-                ("padding", "float32", (4)),  # to 208
-                ],
+                ("normal_matrix", "float32", (16)),  # need 4x4 for mat3
+                ("colour", "float32", (4)),
+                ("padding", "float32", (12)),  # to 256 bytes
+            ],
         )
-
-        vertex_uniform_buffer = device.create_buffer_with_data(
-            data=vertex_uniform_data.tobytes(),
+        num_meshes=3
+        buffer_size = 256 * num_meshes
+        vertex_uniform_buffer = device.create_buffer(
+            size=buffer_size,
             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
             label="vertex_uniform_data",
         )
+        # vertex_uniform_buffer = device.create_buffer_with_data(
+        #     data=vertex_uniform_data.tobytes(),
+        #     usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
+        #     label="vertex_uniform_data",
+        # )
 
         # Create a uniform buffer
         light_uniform_data = np.zeros(
-            (),
-            dtype=[
-                ("light_pos", "float32", (3)),
-                ("light_diffuse", "float32", (3)),
-                ("padding", "float32", (8)),  # to 32 bytes
-                ],
+            (), dtype=[("light_pos", "float32", (4)), ("light_diffuse", "float32", (4))]
         )
 
         light_uniform_buffer = device.create_buffer_with_data(
@@ -205,20 +290,56 @@ class Pipelines:
             label="light_uniform_data",
         )
 
-        bind_group_layout_0 = pipeline.get_bind_group_layout(0)
-        bind_group_layout_1 = pipeline.get_bind_group_layout(1)
+        bind_group_layout_0 = device.create_bind_group_layout(
+            label="vertex_uniform_bind_group_layout",
+            entries=[
+                {
+            "binding": 0,
+            "visibility": wgpu.ShaderStage.VERTEX | wgpu.ShaderStage.FRAGMENT,
+            "buffer": {"type": wgpu.BufferBindingType.uniform,
+                       "has_dynamic_offset": True,
+                       },
+                                       
+                    },
+            ]
+        )
+        
         # Create the bind group
         bind_group_0 = device.create_bind_group(
+            label="vertex_uniform_bind_group",
             layout=bind_group_layout_0,
             entries=[
                 {
-                    "binding": 0,  # Matches @binding(0) in the shader
-                    "resource": {"buffer": vertex_uniform_buffer},
+                "binding": 0,
+                "resource": 
+                {
+                    "label" : "vertex_uniform_buffer",
+                    "buffer": vertex_uniform_buffer,
+                    "offset": 0,  # Initial offset
+                    "size": 256,  # Size of the buffer
+
+                    
+                }
                 }
             ],
         )
 
+        bind_group_layout_1 = device.create_bind_group_layout(
+            label="vertex_uniform_bind_group_layout",
+            entries=[
+                {
+                    "binding": 0,
+                    "visibility": wgpu.ShaderStage.VERTEX | wgpu.ShaderStage.FRAGMENT,
+                    "buffer": 
+                    {
+                        "type": wgpu.BufferBindingType.uniform,  # Uniform buffer
+                        "has_dynamic_offset": False,             # Enable dynamic offsets
+                    },
+                },
+            ]
+        )
         bind_group_1 = device.create_bind_group(
+            label="light_uniform_bind_group",
             layout=bind_group_layout_1,
             entries=[
                 {
@@ -228,42 +349,14 @@ class Pipelines:
             ],
         )
 
-        pipeline_entry = _pipelineEntry(
-            pipeline=pipeline,
-            bind_group=[bind_group_0, bind_group_1],
-            uniform_buffer=[vertex_uniform_buffer, light_uniform_buffer],
-            uniform_data=[vertex_uniform_data, light_uniform_data],
+        layout = device.create_pipeline_layout(
+            label="diffuse_triangle_pipeline_layout",
+            bind_group_layouts=[bind_group_layout_0, bind_group_layout_1],
         )
-        cls._pipelines[name] = pipeline_entry
-        return pipeline_entry
 
-    @classmethod
-    def create_diffuse_triangle_pipeline(cls, name, device):
-        shader = device.create_shader_module(code=diffuse_shader)
-        label = "diffuse_triangle_strip_pipeline"
-        vertex = {
-            "module": shader,
-            "entry_point": "vertex_main",
-            "buffers": [
-                {
-                    "array_stride": 8  * _FLOAT_SIZE, #x,y,z nx,ny,nz,u,v
-                    "attributes": [
-                        {"shader_location": 0, "offset": 0*_FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 1, "offset": 3*_FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 2, "offset": 6*_FLOAT_SIZE, "format": "float32x2"},
-                    ],
-                }
-            ],
-        }
-        fragment = {
-            "module": shader,
-            "entry_point": "fragment_main",
-            "targets": [{"format": wgpu.TextureFormat.rgba8unorm}],
-        }
-        
         pipeline = device.create_render_pipeline(
             label=label,
-            layout=_default_layout,
+            layout=layout,
             vertex=vertex,
             fragment=fragment,
             primitive=_primitive_triangle_list,
@@ -271,62 +364,6 @@ class Pipelines:
             multisample=_default_multisample,
         )
 
-        # Create a uniform buffer
-        vertex_uniform_data = np.zeros(
-            (),
-            dtype=[
-                ("MVP", "float32", (16)),
-                ("model_view", "float32", (16)),
-                ("normal_matrix", "float32", (16)), # need 4x4 for mat3 
-                ("colour", "float32", (3)),
-                ("padding", "float32", (4)),  # to 208
-                ],
-        )
-
-        vertex_uniform_buffer = device.create_buffer_with_data(
-            data=vertex_uniform_data.tobytes(),
-            usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
-            label="vertex_uniform_data",
-        )
-
-        # Create a uniform buffer
-        light_uniform_data = np.zeros(
-            (),
-            dtype=[
-                ("light_pos", "float32", (3)),
-                ("light_diffuse", "float32", (3)),
-                ("padding", "float32", (8)),  # to 32 bytes
-                ],
-        )
-
-        light_uniform_buffer = device.create_buffer_with_data(
-            data=light_uniform_data.tobytes(),
-            usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
-            label="light_uniform_data",
-        )
-
-        bind_group_layout_0 = pipeline.get_bind_group_layout(0)
-        bind_group_layout_1 = pipeline.get_bind_group_layout(1)
-        # Create the bind group
-        bind_group_0 = device.create_bind_group(
-            layout=bind_group_layout_0,
-            entries=[
-                {
-                    "binding": 0,  # Matches @binding(0) in the shader
-                    "resource": {"buffer": vertex_uniform_buffer},
-                }
-            ],
-        )
-
-        bind_group_1 = device.create_bind_group(
-            layout=bind_group_layout_1,
-            entries=[
-                {
-                    "binding": 0,  # Matches @binding(0) in the shader
-                    "resource": {"buffer": light_uniform_buffer},
-                }
-            ],
-        )
 
         pipeline_entry = _pipelineEntry(
             pipeline=pipeline,
@@ -336,4 +373,3 @@ class Pipelines:
         )
         cls._pipelines[name] = pipeline_entry
         return pipeline_entry
-

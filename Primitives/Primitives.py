@@ -13,13 +13,14 @@ which will generate a pipeline for this object and draw into the current context
 import numpy as np
 import wgpu
 
+
 def _circle_table(n):
     # Determine the angle between samples
     angle = 2.0 * np.pi / (n if n != 0 else 1)
-    
+
     # Allocate list for n samples, plus duplicate of first entry at the end
     cs = np.zeros((n + 1, 2), dtype=np.float32)
-    
+
     # Compute cos and sin around the circle
     cs[0, 0] = 1.0  # cost
     cs[0, 1] = 0.0  # sint
@@ -27,14 +28,12 @@ def _circle_table(n):
     for i in range(1, n):
         cs[i, 1] = np.sin(angle * i)  # sint
         cs[i, 0] = np.cos(angle * i)  # cost
-    
+
     # Last sample is duplicate of the first
     cs[n, 1] = cs[0, 1]  # sint
     cs[n, 0] = cs[0, 0]  # cost
-    
+
     return cs
-
-
 
 
 class _primitive:
@@ -49,27 +48,21 @@ class Primitives:
     # and generate pipelines for drawing
     _primitives = {}
 
-
     @classmethod
     def _gen_prim(cls, device, data, draw_type):
-        vertex_buffer = device.create_buffer_with_data(
-            data=data, usage=wgpu.BufferUsage.VERTEX
-        )
+        vertex_buffer = device.create_buffer_with_data(data=data, usage=wgpu.BufferUsage.VERTEX)
         prim = _primitive()
         prim.buffer = vertex_buffer
-        prim.draw_size = len(data)//8
+        prim.draw_size = len(data) // 8
         prim.draw_type = draw_type
         return prim
 
     @classmethod
     def load_default_primitives(cls, device):
-        prims=np.load("PrimData/Primitives.npz")
-        print(prims)
+        prims = np.load("PrimData/Primitives.npz")
         for p in prims.items():
-            prim_data=p[1]
+            prim_data = p[1]
             cls._primitives[p[0]] = cls._gen_prim(device, prim_data, "triangle")
-        
-
 
     @classmethod
     def create_line_grid(cls, name, device, width, depth, steps):
@@ -242,10 +235,10 @@ class Primitives:
                 d1[7] = v
                 d1[3] = cs[j, 0] * cosn  # nx
                 d1[4] = cs[j, 1] * sinn  # ny
-                d1[5] = sinn             # nz
-                d1[0] = cs[j, 0] * r0    # x
-                d1[1] = cs[j, 1] * r0    # y
-                d1[2] = z0               # z
+                d1[5] = sinn  # nz
+                d1[0] = cs[j, 0] * r0  # x
+                d1[1] = cs[j, 1] * r0  # y
+                d1[2] = z0  # z
                 data.append(d1)
 
                 d2 = [0] * 8
@@ -253,10 +246,10 @@ class Primitives:
                 d2[7] = v - dv
                 d2[3] = cs[j, 0] * cosn  # nx
                 d2[4] = cs[j, 1] * sinn  # ny
-                d2[5] = sinn             # nz
-                d2[0] = cs[j, 0] * r1    # x
-                d2[1] = cs[j, 1] * r1    # y
-                d2[2] = z1               # z
+                d2[5] = sinn  # nz
+                d2[0] = cs[j, 0] * r1  # x
+                d2[1] = cs[j, 1] * r1  # y
+                d2[2] = z1  # z
                 data.append(d2)
 
                 d3 = [0] * 8
@@ -264,10 +257,10 @@ class Primitives:
                 d3[7] = v - dv
                 d3[3] = cs[j + 1, 0] * cosn  # nx
                 d3[4] = cs[j + 1, 1] * sinn  # ny
-                d3[5] = sinn                 # nz
-                d3[0] = cs[j + 1, 0] * r1    # x
-                d3[1] = cs[j + 1, 1] * r1    # y
-                d3[2] = z1                   # z
+                d3[5] = sinn  # nz
+                d3[0] = cs[j + 1, 0] * r1  # x
+                d3[1] = cs[j + 1, 1] * r1  # y
+                d3[2] = z1  # z
                 data.append(d3)
 
                 # Second triangle
@@ -276,10 +269,10 @@ class Primitives:
                 d4[7] = v
                 d4[3] = cs[j, 0] * cosn  # nx
                 d4[4] = cs[j, 1] * sinn  # ny
-                d4[5] = sinn             # nz
-                d4[0] = cs[j, 0] * r0    # x
-                d4[1] = cs[j, 1] * r0    # y
-                d4[2] = z0               # z
+                d4[5] = sinn  # nz
+                d4[0] = cs[j, 0] * r0  # x
+                d4[1] = cs[j, 1] * r0  # y
+                d4[2] = z0  # z
                 data.append(d4)
 
                 d5 = [0] * 8
@@ -287,10 +280,10 @@ class Primitives:
                 d5[7] = v - dv
                 d5[3] = cs[j + 1, 0] * cosn  # nx
                 d5[4] = cs[j + 1, 1] * sinn  # ny
-                d5[5] = sinn                 # nz
-                d5[0] = cs[j + 1, 0] * r1    # x
-                d5[1] = cs[j + 1, 1] * r1    # y
-                d5[2] = z1                   # z
+                d5[5] = sinn  # nz
+                d5[0] = cs[j + 1, 0] * r1  # x
+                d5[1] = cs[j + 1, 1] * r1  # y
+                d5[2] = z1  # z
                 data.append(d5)
 
                 d6 = [0] * 8
@@ -298,10 +291,10 @@ class Primitives:
                 d6[7] = v
                 d6[3] = cs[j + 1, 0] * cosn  # nx
                 d6[4] = cs[j + 1, 1] * sinn  # ny
-                d6[5] = sinn                 # nz
-                d6[0] = cs[j + 1, 0] * r0    # x
-                d6[1] = cs[j + 1, 1] * r0    # y
-                d6[2] = z0                   # z
+                d6[5] = sinn  # nz
+                d6[0] = cs[j + 1, 0] * r0  # x
+                d6[1] = cs[j + 1, 1] * r0  # y
+                d6[2] = z0  # z
                 data.append(d6)
 
                 u -= du
@@ -323,8 +316,6 @@ class Primitives:
         prim.draw_size = len(data_array) // 8
         prim.draw_type = "triangle"
         cls._primitives[name] = prim
-
-
 
 
 if __name__ == "__main__":

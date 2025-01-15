@@ -3,96 +3,49 @@ import numpy as np
 import wgpu
 import math
 from Primitives import Primitives
-from Pipelines import Pipelines
+from Pipelines import Pipelines, _TEXTURE_FORMAT
 from FirstPersonCamera import FirstPersonCamera
-
-def perspective_webgpu(fov_y, aspect, z_near, z_far):
-    fov_y = math.radians(fov_y)
-    f = 1.0 / math.tan(fov_y / 2)
-    return nccapy.Mat4.from_list(
-        [[f / aspect, 0,  0,                           0],
-        [0,          f,  0,                           0],
-        [0,          0,  z_far / (z_near - z_far),   -1],
-        [0,          0,  (z_near * z_far) / (z_near - z_far),  0]]
-    )
-
-def look_atwebgpu(eye, look, up):
-    """
-    Calculate 4x4 matrix for camera lookAt
-    """
-
-    n = look - eye
-    v = n.cross(up)
-    u = v.cross(n)
-    n.normalize()
-    v.normalize()
-    u.normalize()
-    result = nccapy.Mat4.identity()
-    result.m[0][0] = v.x
-    result.m[1][0] = v.y
-    result.m[2][0] = v.z
-    result.m[0][1] = u.x
-    result.m[1][1] = u.y
-    result.m[2][1] = u.z
-    result.m[0][2] = -n.x
-    result.m[1][2] = -n.y
-    result.m[2][2] = n.z
-    result.m[3][0] = -eye.dot(v)
-    result.m[3][1] = -eye.dot(u)
-    result.m[3][2] = eye.dot(n)
-    return result
 
 
 class WebGPU:
     def __init__(self, texture_size=(1024, 1024, 1)):
-        self.rotation = 0.0
-        self.prim_index=0
-        self.mouse_rotation = nccapy.Mat4()
+        self.prim_index = 0
         self.texture_size = texture_size
         self.init_context()
-        # self.persp = perspective_webgpu(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
-        # self.persp1=nccapy.perspective(45.0, texture_size[0]/texture_size[1], 0.1, 100.0)
-        # print(self.persp,self.persp1)
-        # self.lookat = look_atwebgpu(
-        #     nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
-        # )
-
+        self.width = 1024
+        self.height = 720
+        self.rotation=0
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
         Primitives.load_default_primitives(self.device)
-        Primitives.create_cone("cone", self.device, 0.5, 10 ,20,50)
+        Primitives.create_cone("cone", self.device, 0.5, 10, 20, 50)
+        self.camera = FirstPersonCamera(
+            nccapy.Vec3(0, 2, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0), 45.0
+        )
         self.line_pipeline = Pipelines.create_line_pipeline("line", self.device)
-        self.diffuse_tri_strip_pipeline=Pipelines.create_diffuse_triangle_strip_pipeline("diffuse_tri_strip", self.device)
-        self.diffuse_tri_pipeline=Pipelines.create_diffuse_triangle_pipeline("diffuse_tri", self.device)
-       
+        self.diffuse_tri_pipeline = Pipelines.create_diffuse_triangle_pipeline(
+            "diffuse_tri", self.device
+        )
         self.init_buffers()
-        self.camera = FirstPersonCamera(nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0),45.0)
 
     def init_buffers(self):
-        self.line_pipeline.uniform_data["MVP"] = nccapy.Mat4().get_numpy().flatten()
-        self.line_pipeline.uniform_data["colour"] = np.array([1.0, 1.0, 0.0])
-
-        # setup the buffer for the diffuse pipeline
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
-
-        self.diffuse_tri_strip_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0])
-        self.diffuse_tri_strip_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
+        self.line_pipeline.uniform_data["MVP"] = self.camera.get_vp().get_numpy().flatten()
+        self.line_pipeline.uniform_data["colour"] = np.array([1.0, 1.0, 1.0, 1.0])
 
         # setup the buffer for the diffuse tri pipeline
-        self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_pipeline.uniform_data[0]["model_view"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = nccapy.Mat4().get_numpy().flatten()
-        self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([1.0, .0, 0.0])
+        self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = (
+            self.camera.get_vp().get_numpy().flatten()
+        )
+        self.diffuse_tri_pipeline.uniform_data[0]["model_view"] = (
+            self.camera.get_vp().get_numpy().flatten()
+        )
+        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = (
+            nccapy.Mat4().get_numpy().flatten()
+        )
+        self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([0.0, 0.0, 1.0, 1.0])
 
-        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0])
-        self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0])
-
-
-
-
+        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0, 1.0])
+        self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0, 1.0])
 
     def init_context(self, power_preference="high-performance", limits=None):
         # Request an adapter and device
@@ -101,7 +54,7 @@ class WebGPU:
         # this is the target texture size
         self.colour_texture = self.device.create_texture(
             size=self.texture_size,  # width, height, depth
-            format=wgpu.TextureFormat.rgba8unorm,
+            format=_TEXTURE_FORMAT,
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT | wgpu.TextureUsage.COPY_SRC,
         )
         self.colour_buffer_view = self.colour_texture.create_view()
@@ -112,7 +65,6 @@ class WebGPU:
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
         )
         self.depth_buffer_view = depth_texture.create_view()
-
 
     def get_colour_buffer(self):
         buffer_size = (
@@ -146,16 +98,7 @@ class WebGPU:
         return pixel_data
 
     def update_uniform_buffers(self):
-        self.rotation += 1
-        # x = nccapy.Mat4.rotate_x(self.rotation)
-        y = nccapy.Mat4.rotate_y(self.rotation)
-        # z = nccapy.Mat4.rotate_z(self.rotation)
-        rotation = y
-        mvp_matrix = (
-            (self.camera.get_vp() @ self.mouse_rotation)
-            .get_numpy()
-            .astype(np.float32)
-        )
+        mvp_matrix = (self.camera.get_vp()).get_numpy().astype(np.float32)
         self.line_pipeline.uniform_data["MVP"] = mvp_matrix.flatten()
 
         self.device.queue.write_buffer(
@@ -164,50 +107,34 @@ class WebGPU:
             data=self.line_pipeline.uniform_data.tobytes(),
         )
 
-    
+    def set_prim_uniforms(
+        self, index, colour, position, rotation=nccapy.Vec3(0, 0, 0), scale=nccapy.Vec3(1, 1, 1)
+    ):
+        tx = nccapy.Transform()
+        tx.set_position(position)
+        tx.set_rotation(rotation)
+        tx.set_scale(scale)
 
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
+        mv_matrix = (self.camera.view @ tx.get_matrix()).get_numpy().astype(np.float32)
 
-        mv_matrix = (
-            (self.camera.view @ self.mouse_rotation)
-            .get_numpy()
-            .astype(np.float32)
-        )
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
-        nm = (self.camera.view @ self.mouse_rotation)
-        nm.inverse()
-        nm.transpose()
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
-
-        self.diffuse_tri_strip_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
-
-        self.device.queue.write_buffer(
-            buffer=self.diffuse_tri_strip_pipeline.uniform_buffer[0],
-            buffer_offset=0,
-            data=self.diffuse_tri_strip_pipeline.uniform_data[0].tobytes(),
-        )
-
-        self.device.queue.write_buffer(
-            buffer=self.diffuse_tri_strip_pipeline.uniform_buffer[1],
-            buffer_offset=0,
-            data=self.diffuse_tri_strip_pipeline.uniform_data[1].tobytes(),
-        )
-
+        mvp_matrix = (self.camera.get_vp() @ tx.get_matrix()).get_numpy().astype(np.float32)
 
         self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
-        self.diffuse_tri_pipeline.uniform_data[0]["model_view"]=mv_matrix.flatten()
-        nm = (self.camera.view @ self.mouse_rotation)
+        self.diffuse_tri_pipeline.uniform_data[0]["model_view"] = mv_matrix.flatten()
+        nm = self.camera.get_vp() @ tx.get_matrix()
         nm.inverse()
         nm.transpose()
-        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"]=nm.get_numpy().flatten()
+        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = nm.get_numpy().flatten()
 
-        self.diffuse_tri_pipeline.uniform_data[0]["colour"] =np.array([1.0, 0.0, 0.0])
-
+        self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([colour])
+        # copy sub data
         self.device.queue.write_buffer(
             buffer=self.diffuse_tri_pipeline.uniform_buffer[0],
-            buffer_offset=0,
+            buffer_offset=index * 256,
             data=self.diffuse_tri_pipeline.uniform_data[0].tobytes(),
         )
+        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 5.0, -1.0, 1.0])
+        self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0, 1.0])
 
         self.device.queue.write_buffer(
             buffer=self.diffuse_tri_pipeline.uniform_buffer[1],
@@ -215,21 +142,23 @@ class WebGPU:
             data=self.diffuse_tri_pipeline.uniform_data[1].tobytes(),
         )
 
-    def update_camera_vectors(self,diffx,diffy) :
-        self.camera.process_mouse_movement(diffx,diffy)
+    def update_camera_vectors(self, diffx, diffy):
+        self.camera.process_mouse_movement(diffx, diffy)
 
-    def move_camera(self,x,y,delta=0.1) :
-        self.camera.move(x,y,delta)
+    def move_camera(self, x, y, delta=0.1):
+        self.camera.move(x, y, delta)
 
-
-    def set_mouse(self, x, y, model_pos):
-        rot_x = nccapy.Mat4.rotate_x(x)
-        rot_y = nccapy.Mat4.rotate_y(y)
-        rotation = rot_y @ rot_x
-        rotation.m[3][0] = model_pos.x
-        rotation.m[3][1] = model_pos.y
-        rotation.m[3][2] = model_pos.z
-        self.mouse_rotation = rotation
+    def resize(self, width, height):
+        # self.texture_size = (width, height, 1)
+        # self.init_context()
+        print("resize")
+        try:
+            aspect = width / height
+        except ZeroDivisionError:
+            aspect = 1
+        self.camera.set_projection(45.0, aspect, 0.1, 250.0)
+        self.width = width
+        self.height = height
 
     def render(self):
         command_encoder = self.device.create_command_encoder()
@@ -255,20 +184,49 @@ class WebGPU:
         render_pass.set_pipeline(self.line_pipeline.pipeline)
         render_pass.set_bind_group(0, self.line_pipeline.bind_group, [], 0, 999999)
         Primitives.draw(render_pass, "grid")
-
-
+        self.rotation +=1
         render_pass.set_pipeline(self.diffuse_tri_pipeline.pipeline)
-        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [], 0, 999999)
-        render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [], 0, 999999)
+        self.set_prim_uniforms(
+            0,
+            colour=[1.0, 0.0, 0.0, 1.0],
+            position=[0.0, 0.5, 0.0],
+            rotation=[self.rotation, 0, 0.0],
+            scale=[1.0, 1.0, 1.0],
+        )
+        self.set_prim_uniforms(
+            1,
+            colour=[0.0, 1.0, 0.0, 1.0],
+            position=[1.0, 0.5, 0.0],
+            rotation=[0.0, self.rotation, 0.0],
+            scale=[1.0, 1.0, 1.0],
+        )
+        self.set_prim_uniforms(
+            2,
+            colour=[0.0, 0.0, 1.0, 1.0],
+            position=[-1.0, 0.5, 0.0],
+            rotation=[0.0, 0, self.rotation],
+            scale=[0.1, 0.1, 0.1],
+        )
+        # set lights
+        render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [])
+        # set everything else
+        # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [0])
+        # Primitives.draw(render_pass, "troll")
+                # Ensure the offset does not exceed the buffer size
         
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [0])
+        Primitives.draw(render_pass, "troll")
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [1*256],)
+        Primitives.draw(render_pass, "teapot")
 
-        prims=["cone","sphere","cube","dodecahedron","troll","teapot","bunny","buddah","dragon","football","tetrahedron","octahedron","icosahedron"]
-        Primitives.draw(render_pass,prims[self.prim_index])
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [2*256])
+        Primitives.draw(render_pass, "bunny")
 
+        # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [2*256],0,256)
+        # Primitives.draw(render_pass, "troll")
 
         render_pass.end()
 
         # Submit the commands
         self.device.queue.submit([command_encoder.finish()])
 
-    # def create_uniform_buffers(self):

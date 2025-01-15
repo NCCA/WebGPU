@@ -181,6 +181,8 @@ render_pass.set_pipeline(pipeline)
 render_pass.set_bind_group(0, bind_group, [], 0, 999999)
 render_pass.set_vertex_buffer(0, vertex_buffer)
 render_pass.set_index_buffer(index_buffer, wgpu.IndexFormat.uint16)
+
+
 render_pass.draw_indexed(len(indices), 1, 0, 0, 0)
 render_pass.end()
 
