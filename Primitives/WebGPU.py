@@ -14,7 +14,7 @@ class WebGPU:
         self.init_context()
         self.width = 1024
         self.height = 720
-        self.rotation=0
+        self.rotation = 0
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
         Primitives.load_default_primitives(self.device)
@@ -184,7 +184,7 @@ class WebGPU:
         render_pass.set_pipeline(self.line_pipeline.pipeline)
         render_pass.set_bind_group(0, self.line_pipeline.bind_group, [], 0, 999999)
         Primitives.draw(render_pass, "grid")
-        self.rotation +=1
+        self.rotation += 1
         render_pass.set_pipeline(self.diffuse_tri_pipeline.pipeline)
         self.set_prim_uniforms(
             0,
@@ -208,18 +208,18 @@ class WebGPU:
             scale=[0.1, 0.1, 0.1],
         )
         # set lights
-        render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group[1], [])
+        render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group, [0])
         # set everything else
         # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [0])
         # Primitives.draw(render_pass, "troll")
-                # Ensure the offset does not exceed the buffer size
-        
-        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [0])
+        # Ensure the offset does not exceed the buffer size
+
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [0])
         Primitives.draw(render_pass, "troll")
-        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [1*256],)
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [1 * 256])
         Primitives.draw(render_pass, "teapot")
 
-        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [2*256])
+        render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [2 * 256])
         Primitives.draw(render_pass, "bunny")
 
         # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [2*256],0,256)
@@ -229,4 +229,3 @@ class WebGPU:
 
         # Submit the commands
         self.device.queue.submit([command_encoder.finish()])
-
