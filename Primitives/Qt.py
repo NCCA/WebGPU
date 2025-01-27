@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-
+import time
 import nccapy
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         self.ZOOM = 0.5
         self.modelPos = nccapy.Vec3()
         self.key_pressed = set()
+        self.start_time = time.perf_counter()
 
         # Create a central widget with the drawing widget
         central_widget = QWidget(self)
@@ -41,7 +42,8 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         self.webgpu.resize(event.size().width(), event.size().height())
 
-    def timerEvent(self, event):
+    def update(self) :
+
         x = 0.0
         y = 0.0
 
@@ -54,13 +56,17 @@ class MainWindow(QMainWindow):
                 x += 0.1
             elif k == Qt.Key.Key_Down:
                 x -= 0.1
-        
-        self.drawing_widget.text_buffer.clear()
         self.drawing_widget.render_text(10, 20, "Light Position: " + str(self.webgpu.light_pos),size=20,colour=Qt.yellow)
         self.webgpu.move_camera(x, y)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
         self.drawing_widget.buffer = self.webgpu.get_colour_buffer()
+        super().update()
+        #print((time.perf_counter() - self.start_time) * 1000)
+
+
+    def timerEvent(self, event):
+        self.start_time = time.perf_counter()
         self.update()
 
     def mousePressEvent(self, event):
@@ -104,11 +110,6 @@ class MainWindow(QMainWindow):
 
         elif numPixels.x() < 0:
             self.modelPos.z -= self.ZOOM
-        # if numPixels.y() > 0:
-        #     self.modelPos.x += self.ZOOM
-
-        # elif numPixels.y() < 0:
-        #     self.modelPos.x -= self.ZOOM
 
         self.update()
 
@@ -125,6 +126,7 @@ class MainWindow(QMainWindow):
             self.spinXFace = 0
             self.spinYFace = 0
             self.modelPos.set(0, 0, 0)
+            self.webgpu.camera.eye.set(0, 2, 5)
        
         elif key == Qt.Key.Key_W:
             self.webgpu.light_pos.z += 1.0

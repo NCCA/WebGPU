@@ -219,7 +219,6 @@ class WebGPU:
         )
         # set lights
         render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group, [0])
-        # set everything else
 
         render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [0])
         Primitives.draw(render_pass, "troll")

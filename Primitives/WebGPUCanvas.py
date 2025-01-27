@@ -44,6 +44,7 @@ class WebGPUCanvas(QWidget):
             painter.setPen(colour)
             painter.setFont(QFont("Arial", size))
             painter.drawText(x, y, text)
+        self.text_buffer.clear()
 
     def render_text(
         self,
