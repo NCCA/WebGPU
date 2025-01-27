@@ -1,6 +1,5 @@
 import nccapy
 import math
-import numpy as np
 
 
 class FirstPersonCamera:

@@ -3,41 +3,12 @@
 import sys
 
 import nccapy
-from qtpy.QtCore import QRect, Qt
-from qtpy.QtGui import QImage, QPainter
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from WebGPU import WebGPU
 
-
-class DrawingWidget(QWidget):
-    def __init__(self, parent=None, size=(1024, 720)):
-        super().__init__(parent)
-        # self.setFixedSize(size[0], size[1])  # Set the size of the drawing widget
-
-    def paintEvent(self, event):
-        if hasattr(self, "buffer"):
-            self._present_image(self.buffer)
-
-    def _present_image(self, image_data):
-        size = image_data.shape[0], image_data.shape[1]  # width, height
-        painter = QPainter(self)
-        # # We want to simply blit the image (copy pixels one-to-one on framebuffer).
-        # # Maybe Qt does this when the sizes match exactly (like they do here).
-        # # Converting to a QPixmap and painting that only makes it slower.
-
-        # # Just in case, set render hints that may hurt performance.
-        painter.setRenderHints(
-            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform, False
-        )
-
-        image = QImage(
-            image_data.flatten(), size[0], size[1], size[0] * 4, QImage.Format.Format_RGBA8888
-        )
-
-        rect1 = QRect(0, 0, size[0], size[1])
-        rect2 = self.rect()
-        painter.drawImage(rect2, image, rect1)
+from WebGPUCanvas import WebGPUCanvas
 
 
 class MainWindow(QMainWindow):
@@ -61,7 +32,7 @@ class MainWindow(QMainWindow):
         # Create a central widget with the drawing widget
         central_widget = QWidget(self)
         layout = QVBoxLayout(central_widget)
-        self.drawing_widget = DrawingWidget()
+        self.drawing_widget = WebGPUCanvas()
         layout.addWidget(self.drawing_widget)
         self.setCentralWidget(central_widget)
         self.resize(1024, 720)
@@ -83,6 +54,9 @@ class MainWindow(QMainWindow):
                 x += 0.1
             elif k == Qt.Key.Key_Down:
                 x -= 0.1
+        
+        self.drawing_widget.text_buffer.clear()
+        self.drawing_widget.render_text(10, 20, "Light Position: " + str(self.webgpu.light_pos),size=20,colour=Qt.yellow)
         self.webgpu.move_camera(x, y)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
@@ -95,11 +69,14 @@ class MainWindow(QMainWindow):
             self.origX = pos.x()
             self.origY = pos.y()
             self.rotate = True
+            self.update()
 
         elif event.button() == Qt.MouseButton.RightButton:
             self.origXPos = pos.x()
             self.origYPos = pos.y()
             self.translate = True
+            self.update()
+
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -148,17 +125,19 @@ class MainWindow(QMainWindow):
             self.spinXFace = 0
             self.spinYFace = 0
             self.modelPos.set(0, 0, 0)
-        elif key == Qt.Key.Key_L:
-            self.transformLight ^= True
-        elif key == Qt.Key.Key_1:
-            self.webgpu.prim_index -= 1
-            if self.webgpu.prim_index < 0:
-                self.webgpu.prim_index = 0
-
-        elif key == Qt.Key.Key_2:
-            self.webgpu.prim_index += 1
-            if self.webgpu.prim_index >= 11:
-                self.webgpu.prim_index = 11
+       
+        elif key == Qt.Key.Key_W:
+            self.webgpu.light_pos.z += 1.0
+        elif key == Qt.Key.Key_S:
+            self.webgpu.light_pos.z -= 1.0
+        elif key == Qt.Key.Key_A:
+            self.webgpu.light_pos.x -= 1.0
+        elif key == Qt.Key.Key_D:
+            self.webgpu.light_pos.x += 1.0
+        elif key == Qt.Key.Key_Q:
+            self.webgpu.light_pos.y -= 1.0
+        elif key == Qt.Key.Key_E:
+            self.webgpu.light_pos.y += 1.0
 
         self.update()
 

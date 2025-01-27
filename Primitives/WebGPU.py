@@ -1,7 +1,6 @@
 import nccapy
 import numpy as np
 import wgpu
-import math
 from Primitives import Primitives
 from Pipelines import Pipelines, _TEXTURE_FORMAT
 from FirstPersonCamera import FirstPersonCamera
@@ -15,6 +14,7 @@ class WebGPU:
         self.width = 1024
         self.height = 720
         self.rotation = 0
+        self.light_pos = nccapy.Vec3(0, 2, 0)
         Primitives.create_line_grid("grid", self.device, 5.5, 5.5, 12)
         Primitives.create_sphere("sphere", self.device, 1.0, 200)
         Primitives.load_default_primitives(self.device)
@@ -44,7 +44,7 @@ class WebGPU:
         )
         self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([0.0, 0.0, 1.0, 1.0])
 
-        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 2.0, 0.0, 1.0])
+        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([self.light_pos.x, self.light_pos.y, self.light_pos.z, 1.0])
         self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0, 1.0])
 
     def init_context(self, power_preference="high-performance", limits=None):
@@ -121,11 +121,21 @@ class WebGPU:
 
         self.diffuse_tri_pipeline.uniform_data[0]["MVP"] = mvp_matrix.flatten()
         self.diffuse_tri_pipeline.uniform_data[0]["model_view"] = mv_matrix.flatten()
-        nm = self.camera.get_vp() @ tx.get_matrix()
-        nm.inverse()
+        
+        nm = self.camera.view @ tx.get_matrix()
+        # as we need only the rotation part of the model view matrix we can zero the rest
+        nm.m[0][3]=0
+        nm.m[1][3]=0
+        nm.m[2][3]=0
+        nm.m[3][0]=0
+        nm.m[3][1]=0
+        nm.m[3][2]=0
+        nm.m[3][3]=1
+        nm=nm.inverse()
         nm.transpose()
-        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = nm.get_numpy().flatten()
 
+
+        self.diffuse_tri_pipeline.uniform_data[0]["normal_matrix"] = nm.get_numpy().flatten()
         self.diffuse_tri_pipeline.uniform_data[0]["colour"] = np.array([colour])
         # copy sub data
         self.device.queue.write_buffer(
@@ -133,7 +143,7 @@ class WebGPU:
             buffer_offset=index * 256,
             data=self.diffuse_tri_pipeline.uniform_data[0].tobytes(),
         )
-        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([0.0, 5.0, -1.0, 1.0])
+        self.diffuse_tri_pipeline.uniform_data[1]["light_pos"] = np.array([self.light_pos.x, self.light_pos.y, self.light_pos.z, 1.0])    
         self.diffuse_tri_pipeline.uniform_data[1]["light_diffuse"] = np.array([1.0, 1.0, 1.0, 1.0])
 
         self.device.queue.write_buffer(
@@ -210,9 +220,6 @@ class WebGPU:
         # set lights
         render_pass.set_bind_group(1, self.diffuse_tri_pipeline.bind_group, [0])
         # set everything else
-        # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [0])
-        # Primitives.draw(render_pass, "troll")
-        # Ensure the offset does not exceed the buffer size
 
         render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [0])
         Primitives.draw(render_pass, "troll")
@@ -222,8 +229,6 @@ class WebGPU:
         render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group, [2 * 256])
         Primitives.draw(render_pass, "bunny")
 
-        # render_pass.set_bind_group(0, self.diffuse_tri_pipeline.bind_group[0], [2*256],0,256)
-        # Primitives.draw(render_pass, "troll")
 
         render_pass.end()
 

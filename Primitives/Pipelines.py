@@ -8,7 +8,6 @@ to use them. Most of the shaders are quite simple in this case.
 """
 import wgpu
 import numpy as np
-import nccapy
 from PipelineShaders import line_shader, diffuse_shader
 
 _default_depth_stencil = {
@@ -57,6 +56,7 @@ class _pipelineEntry:
         self.bind_group = bind_group
         self.uniform_buffer = uniform_buffer
         self.uniform_data = uniform_data
+
 
 
 class Pipelines:
@@ -129,6 +129,7 @@ class Pipelines:
         cls._pipelines[name] = pipeline_entry
         return pipeline_entry
 
+    
 
     @classmethod
     def create_diffuse_triangle_pipeline(cls, name, device):
@@ -242,6 +243,8 @@ class Pipelines:
             depth_stencil=_default_depth_stencil,
             multisample=_default_multisample,
         )
+
+
         # store in our dictionary
         pipeline_entry = _pipelineEntry(
             pipeline=pipeline,
