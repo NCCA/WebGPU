@@ -1,10 +1,10 @@
 from abc import ABCMeta, abstractmethod
+from typing import List, Tuple
+
 import numpy as np
 from qtpy.QtCore import QRect, Qt
 from qtpy.QtGui import QColor, QFont, QImage, QPainter
 from qtpy.QtWidgets import QWidget
-
-from typing import List, Optional, Tuple
 
 
 class QWidgetABCMeta(type(QWidget), ABCMeta):
@@ -37,6 +37,7 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
         super().__init__()
         self.initialized = False
         self.text_buffer: List[Tuple[int, int, str, int, str, QColor]] = []
+        self.buffer = None
 
     @abstractmethod
     def initializeWebGPU(self) -> None:
@@ -83,7 +84,7 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
         self.paintWebGPU()
         painter = QPainter(self)
 
-        if hasattr(self, "buffer"):
+        if self.buffer is not None:
             self._present_image(painter, self.buffer)
         for x, y, text, size, font, colour in self.text_buffer:
             painter.setPen(colour)
