@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -29,7 +28,6 @@ class WebGPUCanvas(QWidget):
         # self.setFixedSize(size[0], size[1])  # Set the size of the drawing widget
         self.text_buffer: List[Tuple[int, int, str, int, str, QColor]] = []
 
-    
     def paintEvent(self, event: QPainter) -> None:
         """
         Handle the paint event to render the image and text.
@@ -39,7 +37,7 @@ class WebGPUCanvas(QWidget):
         """
         if hasattr(self, "buffer"):
             painter = QPainter(self)
-            self._present_image(painter,self.buffer)
+            self._present_image(painter, self.buffer)
         for x, y, text, size, font, colour in self.text_buffer:
             painter.setPen(colour)
             painter.setFont(QFont("Arial", size))
@@ -69,8 +67,7 @@ class WebGPUCanvas(QWidget):
         self.text_buffer.append((x, y, text, size, font, colour))
         self.update()
 
-
-    def _present_image(self,painter, image_data: np.ndarray) -> None:
+    def _present_image(self, painter, image_data: np.ndarray) -> None:
         """
         Present the image data on the canvas.
 

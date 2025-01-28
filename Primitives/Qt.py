@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         self.webgpu.resize(event.size().width(), event.size().height())
 
-    def update(self) :
+    def update(self):
 
         x = 0.0
         y = 0.0
@@ -56,14 +56,15 @@ class MainWindow(QMainWindow):
                 x += 0.1
             elif k == Qt.Key.Key_Down:
                 x -= 0.1
-        self.drawing_widget.render_text(10, 20, "Light Position: " + str(self.webgpu.light_pos),size=20,colour=Qt.yellow)
+        self.drawing_widget.render_text(
+            10, 20, "Light Position: " + str(self.webgpu.light_pos), size=20, colour=Qt.yellow
+        )
         self.webgpu.move_camera(x, y)
         self.webgpu.update_uniform_buffers()
         self.webgpu.render()
         self.drawing_widget.buffer = self.webgpu.get_colour_buffer()
         super().update()
-        #print((time.perf_counter() - self.start_time) * 1000)
-
+        # print((time.perf_counter() - self.start_time) * 1000)
 
     def timerEvent(self, event):
         self.start_time = time.perf_counter()
@@ -82,7 +83,6 @@ class MainWindow(QMainWindow):
             self.origYPos = pos.y()
             self.translate = True
             self.update()
-
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
             self.spinYFace = 0
             self.modelPos.set(0, 0, 0)
             self.webgpu.camera.eye.set(0, 2, 5)
-       
+            self.webgpu.light_pos.set(0, 2, 0)
         elif key == Qt.Key.Key_W:
             self.webgpu.light_pos.z += 1.0
         elif key == Qt.Key.Key_S:

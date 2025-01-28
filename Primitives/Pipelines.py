@@ -6,6 +6,7 @@ As pipelines are closely related to the shaders some of the shader code is inclu
 as well, think most of the shaders will be stored in their own python file as strings and imported
 to use them. Most of the shaders are quite simple in this case.
 """
+
 import wgpu
 import numpy as np
 from PipelineShaders import line_shader, diffuse_shader
@@ -56,7 +57,6 @@ class _pipelineEntry:
         self.bind_group = bind_group
         self.uniform_buffer = uniform_buffer
         self.uniform_data = uniform_data
-
 
 
 class Pipelines:
@@ -129,8 +129,6 @@ class Pipelines:
         cls._pipelines[name] = pipeline_entry
         return pipeline_entry
 
-    
-
     @classmethod
     def create_diffuse_triangle_pipeline(cls, name, device):
         shader = device.create_shader_module(code=diffuse_shader)
@@ -200,7 +198,7 @@ class Pipelines:
                 },
                 {
                     "binding": 1,
-                    "visibility":  wgpu.ShaderStage.FRAGMENT,
+                    "visibility": wgpu.ShaderStage.FRAGMENT,
                     "buffer": {
                         "type": wgpu.BufferBindingType.uniform,
                         "has_dynamic_offset": False,
@@ -221,12 +219,9 @@ class Pipelines:
                         "buffer": vertex_uniform_buffer,
                         "offset": 0,  # Initial offset
                         "size": 256,  # Size of the buffer
-                    }
+                    },
                 },
-                {
-                    "binding": 1,  
-                    "resource": {"buffer": light_uniform_buffer},
-                },
+                {"binding": 1, "resource": {"buffer": light_uniform_buffer}},
             ],
         )
 
@@ -243,7 +238,6 @@ class Pipelines:
             depth_stencil=_default_depth_stencil,
             multisample=_default_multisample,
         )
-
 
         # store in our dictionary
         pipeline_entry = _pipelineEntry(
