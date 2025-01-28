@@ -1,11 +1,15 @@
+from WebGPUWidget import WebGPUWidget
 import nccapy
 import numpy as np
 import wgpu
 import wgpu.backends.auto
 
 
-class WebGPU:
+class WebGPU(WebGPUWidget):
     def __init__(self):
+        super().__init__()
+
+    def initializeWebGPU(self):
         self.init_context()
         self.load_shaders("vertex_shader.wgsl", "fragment_shader.wgsl")
         self.create_geo()
@@ -45,18 +49,18 @@ class WebGPU:
         self.fragment_shader = self.device.create_shader_module(code=fragment_shader_code)
 
     def create_geo(self):
-        # fmt: off
         # Cube vertex data
-        vertices = np.array([ 
-            # Positions       # Colors
-            -1, -1, -1,       1, 0, 0,
-            1, -1, -1,       0, 1, 0,
-            1,  1, -1,       0, 0, 1,
-            -1,  1, -1,       1, 1, 0,
-            -1, -1,  1,       1, 0, 1,
-            1, -1,  1,       0, 1, 1,
-            1,  1,  1,       1, 1, 1,
-            -1,  1,  1,       0, 0, 0,
+        # fmt: off
+        vertices = np.array([
+            # Positions  # Colors
+            -1, -1, -1, 1, 0, 0,
+            1, -1, -1, 0, 1, 0,
+            1, 1, -1, 0, 0, 1,
+            -1, 1, -1, 1, 1, 0,
+            -1, -1, 1, 1, 0, 1,
+            1, -1, 1, 0, 1, 1,
+            1, 1, 1, 1, 1, 1,
+            -1, 1, 1, 0, 0, 0,
         ], dtype=np.float32)
 
         self.indices = np.array([
@@ -67,10 +71,11 @@ class WebGPU:
             0, 3, 7, 7, 4, 0,
             1, 2, 6, 6, 5, 1,
         ], dtype=np.uint16)
+        # fmt: on
         # Create the vertex buffer
         self.vertex_buffer = self.device.create_buffer_with_data(
-    data=vertices, usage=wgpu.BufferUsage.VERTEX
-    )
+            data=vertices, usage=wgpu.BufferUsage.VERTEX
+        )
 
         # Create the index buffer
         self.index_buffer = self.device.create_buffer_with_data(
@@ -139,7 +144,7 @@ class WebGPU:
             multisample={"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False},
         )
 
-    def get_colour_buffer(self):
+    def _update_colour_buffer(self):
         buffer_size = (
             1024 * 720 * 4
         )  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
@@ -162,13 +167,12 @@ class WebGPU:
 
         # Access the mapped memory
         raw_data = readback_buffer.read_mapped()
-        pixel_data = np.frombuffer(raw_data, dtype=np.uint8).reshape(
+        self.buffer = np.frombuffer(raw_data, dtype=np.uint8).reshape(
             (1024, 720, 4)
         )  # Height, Width, Channels
 
         # Unmap the buffer when done
         readback_buffer.unmap()
-        return pixel_data
 
     def update_uniform_buffers(self):
         self.rotation += 1
@@ -176,15 +180,13 @@ class WebGPU:
         y = nccapy.Mat4.rotate_y(self.rotation)
         z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = x @ y @ z
-        self.mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
-        )
+        self.mvp_matrix = (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
 
         self.device.queue.write_buffer(
             buffer=self.uniform_buffer, buffer_offset=0, data=self.mvp_matrix.tobytes()
         )
 
-    def render(self):
+    def paintWebGPU(self):
         command_encoder = self.device.create_command_encoder()
         render_pass = command_encoder.begin_render_pass(
             label="render_pass",
@@ -211,9 +213,9 @@ class WebGPU:
         render_pass.set_index_buffer(self.index_buffer, wgpu.IndexFormat.uint16)
         render_pass.draw_indexed(len(self.indices), 1, 0, 0, 0)
         render_pass.end()
-
         # Submit the commands
         self.device.queue.submit([command_encoder.finish()])
+        self._update_colour_buffer()
 
     def create_uniform_buffers(self):
         self.persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
@@ -221,12 +223,13 @@ class WebGPU:
             nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
         rotation = nccapy.Mat4.rotate_y(40)
-        self.mvp_matrix = mvp_matrixncca = (
-            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
-        )
+        self.mvp_matrix = (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
 
         self.uniform_buffer = self.device.create_buffer_with_data(
             data=self.mvp_matrix.astype(np.float32),
             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
             label="uniform_buffer MVP",
         )
+
+    def resizeWebGPU(self, width, height):
+        pass
