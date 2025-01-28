@@ -28,7 +28,6 @@ class WebGPU(WebGPUWidget):
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT | wgpu.TextureUsage.COPY_SRC,
         )
         self.colour_buffer_view = self.colour_texture.create_view()
-        print(vars(self.colour_buffer_view))
         # Now create a depth buffer
         depth_texture = self.device.create_texture(
             size=(1024, 720, 1),  # width, height, depth
@@ -46,7 +45,9 @@ class WebGPU(WebGPUWidget):
         with open(fragment_shader, "r") as f:
             fragment_shader_code = f.read()
         self.vertex_shader = self.device.create_shader_module(code=vertex_shader_code)
-        self.fragment_shader = self.device.create_shader_module(code=fragment_shader_code)
+        self.fragment_shader = self.device.create_shader_module(
+            code=fragment_shader_code
+        )
 
     def create_geo(self):
         # Cube vertex data
@@ -125,7 +126,11 @@ class WebGPU(WebGPUWidget):
                         "array_stride": 6 * 4,
                         "attributes": [
                             {"shader_location": 0, "offset": 0, "format": "float32x3"},
-                            {"shader_location": 1, "offset": 3 * 4, "format": "float32x3"},
+                            {
+                                "shader_location": 1,
+                                "offset": 3 * 4,
+                                "format": "float32x3",
+                            },
                         ],
                     }
                 ],
@@ -141,7 +146,11 @@ class WebGPU(WebGPUWidget):
                 "depth_write_enabled": True,
                 "depth_compare": wgpu.CompareFunction.less,
             },
-            multisample={"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False},
+            multisample={
+                "count": 1,
+                "mask": 0xFFFFFFFF,
+                "alpha_to_coverage_enabled": False,
+            },
         )
 
     def _update_colour_buffer(self):
@@ -149,7 +158,8 @@ class WebGPU(WebGPUWidget):
             1024 * 720 * 4
         )  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
         readback_buffer = self.device.create_buffer(
-            size=buffer_size, usage=wgpu.BufferUsage.COPY_DST | wgpu.BufferUsage.MAP_READ
+            size=buffer_size,
+            usage=wgpu.BufferUsage.COPY_DST | wgpu.BufferUsage.MAP_READ,
         )
         command_encoder = self.device.create_command_encoder()
         command_encoder.copy_texture_to_buffer(
@@ -180,7 +190,9 @@ class WebGPU(WebGPUWidget):
         y = nccapy.Mat4.rotate_y(self.rotation)
         z = nccapy.Mat4.rotate_z(self.rotation)
         rotation = x @ y @ z
-        self.mvp_matrix = (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+        self.mvp_matrix = (
+            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+        )
 
         self.device.queue.write_buffer(
             buffer=self.uniform_buffer, buffer_offset=0, data=self.mvp_matrix.tobytes()
@@ -223,7 +235,9 @@ class WebGPU(WebGPUWidget):
             nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
         )
         rotation = nccapy.Mat4.rotate_y(40)
-        self.mvp_matrix = (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+        self.mvp_matrix = (
+            (self.persp @ self.lookat @ rotation).get_numpy().astype(np.float32)
+        )
 
         self.uniform_buffer = self.device.create_buffer_with_data(
             data=self.mvp_matrix.astype(np.float32),
