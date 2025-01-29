@@ -1,14 +1,13 @@
 """
 WebGPU primitive generation and drawing functions
-In this class we can generate a pipeline for drawing our data for the most part it will be 
-x,y,z nx,ny,nz and u,v data in a flat numpy array. 
+In this class we can generate a pipeline for drawing our data for the most part it will be
+x,y,z nx,ny,nz and u,v data in a flat numpy array.
 We need to create the data first which is stored in a map as part of the class, we can then call draw
 which will generate a pipeline for this object and draw into the current context.
 """
 
 
 #!/usr/bin/env python3
-
 
 import numpy as np
 import wgpu
@@ -50,7 +49,9 @@ class Primitives:
 
     @classmethod
     def _gen_prim(cls, device, data, draw_type):
-        vertex_buffer = device.create_buffer_with_data(data=data, usage=wgpu.BufferUsage.VERTEX)
+        vertex_buffer = device.create_buffer_with_data(
+            data=data, usage=wgpu.BufferUsage.VERTEX
+        )
         prim = _primitive()
         prim.buffer = vertex_buffer
         prim.draw_size = len(data) // 8
@@ -226,8 +227,8 @@ class Primitives:
 
         for i in range(stacks):
             for j in range(slices):
-                theta1 = j * 2.0 * np.pi / slices
-                theta2 = (j + 1) * 2.0 * np.pi / slices
+                # theta1 = j * 2.0 * np.pi / slices
+                # theta2 = (j + 1) * 2.0 * np.pi / slices
 
                 # First triangle
                 d1 = [0] * 8

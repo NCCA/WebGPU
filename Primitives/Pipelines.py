@@ -17,7 +17,11 @@ _default_depth_stencil = {
     "depth_compare": wgpu.CompareFunction.less,
 }
 
-_default_multisample = {"count": 1, "mask": 0xFFFFFFFF, "alpha_to_coverage_enabled": False}
+_default_multisample = {
+    "count": 1,
+    "mask": 0xFFFFFFFF,
+    "alpha_to_coverage_enabled": False,
+}
 _default_layout = "auto"
 
 _primitive_line_list = {
@@ -79,7 +83,9 @@ class Pipelines:
             "buffers": [
                 {
                     "array_stride": 3 * _FLOAT_SIZE,  # 3 floats * 4 bytes
-                    "attributes": [{"shader_location": 0, "offset": 0, "format": "float32x3"}],
+                    "attributes": [
+                        {"shader_location": 0, "offset": 0, "format": "float32x3"}
+                    ],
                 }
             ],
         }
@@ -100,7 +106,9 @@ class Pipelines:
         )
 
         # Create a uniform buffer
-        uniform_data = np.zeros((), dtype=[("MVP", "float32", (16)), ("colour", "float32", (4))])
+        uniform_data = np.zeros(
+            (), dtype=[("MVP", "float32", (16)), ("colour", "float32", (4))]
+        )
 
         uniform_buffer = device.create_buffer_with_data(
             data=uniform_data.tobytes(),
@@ -140,9 +148,21 @@ class Pipelines:
                 {
                     "array_stride": 8 * _FLOAT_SIZE,  # x,y,z nx,ny,nz,u,v
                     "attributes": [
-                        {"shader_location": 0, "offset": 0 * _FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 1, "offset": 3 * _FLOAT_SIZE, "format": "float32x3"},
-                        {"shader_location": 2, "offset": 6 * _FLOAT_SIZE, "format": "float32x2"},
+                        {
+                            "shader_location": 0,
+                            "offset": 0 * _FLOAT_SIZE,
+                            "format": "float32x3",
+                        },
+                        {
+                            "shader_location": 1,
+                            "offset": 3 * _FLOAT_SIZE,
+                            "format": "float32x3",
+                        },
+                        {
+                            "shader_location": 2,
+                            "offset": 6 * _FLOAT_SIZE,
+                            "format": "float32x2",
+                        },
                     ],
                 }
             ],
@@ -194,7 +214,10 @@ class Pipelines:
                 {
                     "binding": 0,
                     "visibility": wgpu.ShaderStage.VERTEX | wgpu.ShaderStage.FRAGMENT,
-                    "buffer": {"type": wgpu.BufferBindingType.uniform, "has_dynamic_offset": True},
+                    "buffer": {
+                        "type": wgpu.BufferBindingType.uniform,
+                        "has_dynamic_offset": True,
+                    },
                 },
                 {
                     "binding": 1,
@@ -226,7 +249,8 @@ class Pipelines:
         )
 
         layout = device.create_pipeline_layout(
-            label="diffuse_triangle_pipeline_layout", bind_group_layouts=[bind_group_layout_0]
+            label="diffuse_triangle_pipeline_layout",
+            bind_group_layouts=[bind_group_layout_0],
         )
         # finally create the pipeline
         pipeline = device.create_render_pipeline(

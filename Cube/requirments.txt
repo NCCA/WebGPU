@@ -1,2 +1,0 @@
-wgpu
-PySide6
