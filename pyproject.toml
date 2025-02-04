@@ -16,7 +16,8 @@ dependencies = [
     "nccapy",
     "wgpu",
     "pyside6",
-    "numpy"]
+    "numpy",
+    "qtpy"]
 [project.urls]
 Homepage = "https://github.com/NCCA/WebGPU"
 Issues = "https://github.com/NCCA/WebGPU/issues"
