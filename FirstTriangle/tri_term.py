@@ -5,11 +5,16 @@ import wgpu
 import wgpu.utils
 from wgpu.utils import get_default_device
 import time
-
 import shutil
 
 
 def get_terminal_size():
+    """
+    Get the size of the terminal window.
+
+    Returns:
+        tuple: The number of columns and lines in the terminal.
+    """
     size = shutil.get_terminal_size()
     return size.columns, size.lines
 
@@ -36,7 +41,9 @@ def pack_rgba_to_uint32(rgba_array: np.ndarray) -> np.ndarray:
 
 
 def clear_terminal():
-    """Clear the terminal using ANSI escape codes."""
+    """
+    Clear the terminal using ANSI escape codes.
+    """
     print("\033[2J\033[H", end="", flush=True)
 
 

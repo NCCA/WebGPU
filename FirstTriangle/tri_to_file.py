@@ -4,45 +4,7 @@ import numpy as np
 import wgpu
 import wgpu.utils
 from wgpu.utils import get_default_device
-import time
 from PIL import Image
-
-
-def pack_rgba_to_uint32(rgba_array: np.ndarray) -> np.ndarray:
-    """
-    Convert a NumPy array of shape (H, W, 4) representing RGBA values (uint8)
-    into a single uint32 array of shape (H, W).
-
-    Args:
-        rgba_array (np.ndarray): The input RGBA array.
-
-    Returns:
-        np.ndarray: The packed uint32 array.
-    """
-    rgba_array = rgba_array.astype(np.uint8)
-    packed_array = (
-        (rgba_array[..., 0].astype(np.uint32) << 24)
-        | (rgba_array[..., 1].astype(np.uint32) << 16)
-        | (rgba_array[..., 2].astype(np.uint32) << 8)
-        | (rgba_array[..., 3].astype(np.uint32))
-    )
-    return packed_array
-
-
-def swap_alternate_rows(arr: np.ndarray) -> np.ndarray:
-    """
-    Swap every other row of a NumPy array in place.
-
-    Args:
-        arr (np.ndarray): Input array (2D or higher).
-
-    Returns:
-        np.ndarray: Array with alternate rows swapped.
-    """
-    if arr.shape[0] < 2:
-        return arr
-    arr[0::2], arr[1::2] = arr[1::2], arr[0::2].copy()
-    return arr
 
 
 def create_vertex_buffer(
@@ -214,40 +176,21 @@ def copy_texture_to_buffer(
     return buffer
 
 
-def rotate_vertices(vertices: np.ndarray, angle: float) -> np.ndarray:
+def save_numpy_to_image(array: np.ndarray, filename="output.png"):
     """
-    Rotate the vertices around the Z-axis by the given angle.
+    Save a NumPy array as an image using Pillow (PIL).
 
     Args:
-        vertices (np.ndarray): The vertex data.
-        angle (float): The rotation angle in radians.
-
-    Returns:
-        np.ndarray: The rotated vertex data.
+        array (np.ndarray): The input array.
+        filename (str): The filename to save the image as.
     """
-    rotation_matrix = np.array(
-        [
-            [np.cos(angle), -np.sin(angle), 0.0],
-            [np.sin(angle), np.cos(angle), 0.0],
-            [0.0, 0.0, 1.0],
-        ],
-        dtype=np.float32,
-    )
-
-    rotated_vertices = vertices.copy()
-    rotated_vertices[:, :3] = np.dot(vertices[:, :3], rotation_matrix.T)
-    return rotated_vertices
-
-
-def save_numpy_to_image(array, filename="output.png"):
-    """Save a NumPy array as an image using Pillow (PIL)."""
     img = Image.fromarray(array)
     img.save(filename)
 
 
 def main() -> None:
     """
-    Main function to render a rotating triangle and print the high-resolution image.
+    Main function to render a rotating triangle and save the image to a file.
     """
     vertices = np.array(
         [
@@ -260,18 +203,10 @@ def main() -> None:
 
     device = get_default_device()
     pipeline = create_render_pipeline(device)
-
-    angle = 0.0
-    rotated_vertices = rotate_vertices(vertices, angle)
-    vertex_buffer = create_vertex_buffer(device, rotated_vertices)
+    vertex_buffer = create_vertex_buffer(device, vertices)
     texture = render_triangle(device, pipeline, vertex_buffer, WIDTH, HEIGHT)
     buffer = copy_texture_to_buffer(device, texture, WIDTH, HEIGHT)
     save_numpy_to_image(buffer, "output.png")
-    # buffer = pack_rgba_to_uint32(buffer)
-    # buffer = swap_alternate_rows(buffer)
-
-    angle += 0.5
-    time.sleep(0.5)
 
 
 if __name__ == "__main__":
