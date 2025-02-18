@@ -8,7 +8,7 @@ import time
 import shutil
 
 
-def get_terminal_size():
+def get_terminal_size() -> tuple[int, int]:
     """
     Get the size of the terminal window.
 
@@ -40,7 +40,7 @@ def pack_rgba_to_uint32(rgba_array: np.ndarray) -> np.ndarray:
     return packed_array
 
 
-def clear_terminal():
+def clear_terminal() -> None:
     """
     Clear the terminal using ANSI escape codes.
     """
@@ -89,22 +89,30 @@ def swap_alternate_rows(arr: np.ndarray) -> np.ndarray:
     return arr
 
 
-def create_vertex_buffer(
-    device: wgpu.GPUDevice, vertices: np.ndarray
-) -> wgpu.GPUBuffer:
+def init_buffers(device: wgpu.GPUDevice, vertices: np.ndarray) -> wgpu.GPUBuffer:
     """
-    Create a vertex buffer.
+    Initialize the vertex buffer and a copy buffer.
 
     Args:
         device (wgpu.GPUDevice): The GPU device.
         vertices (np.ndarray): The vertex data.
 
     Returns:
-        wgpu.GPUBuffer: The created vertex buffer.
+        wgpu.GPUBuffer: The initialized vertex buffer.
     """
-    return device.create_buffer_with_data(
-        data=vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX
+    # Create the vertex buffer
+    vertex_buffer = device.create_buffer(
+        size=vertices.nbytes,
+        usage=wgpu.BufferUsage.VERTEX | wgpu.BufferUsage.COPY_DST,
     )
+
+    # Create a copy buffer to update the vertex buffer
+    vertex_buffer.copy_buffer = device.create_buffer(
+        size=vertices.nbytes,
+        usage=wgpu.BufferUsage.MAP_WRITE | wgpu.BufferUsage.COPY_SRC,
+    )
+
+    return vertex_buffer
 
 
 def create_render_pipeline(device: wgpu.GPUDevice) -> wgpu.GPURenderPipeline:
@@ -252,19 +260,27 @@ def copy_texture_to_buffer(
 
     readback_buffer.map_sync(mode=wgpu.MapMode.READ)
     raw_data = readback_buffer.read_mapped()
+    # note np buffer is in uint8 format and has shape (height, width, 4) rows cols channels
     buffer = np.frombuffer(raw_data, dtype=np.uint8).reshape((height, width, 4))
     readback_buffer.unmap()
 
     return buffer
 
 
-def rotate_vertices(vertices: np.ndarray, angle: float) -> np.ndarray:
+def rotate_vertices(
+    vertices: np.ndarray,
+    angle: float,
+    vertex_buffer: wgpu.GPUBuffer,
+    device: wgpu.GPUDevice,
+) -> np.ndarray:
     """
     Rotate the vertices around the Z-axis by the given angle.
 
     Args:
         vertices (np.ndarray): The vertex data.
         angle (float): The rotation angle in radians.
+        vertex_buffer (wgpu.GPUBuffer): The vertex buffer.
+        device (wgpu.GPUDevice): The GPU device.
 
     Returns:
         np.ndarray: The rotated vertex data.
@@ -280,12 +296,20 @@ def rotate_vertices(vertices: np.ndarray, angle: float) -> np.ndarray:
 
     rotated_vertices = vertices.copy()
     rotated_vertices[:, :3] = np.dot(vertices[:, :3], rotation_matrix.T)
-    return rotated_vertices
+    tmp_buffer = vertex_buffer.copy_buffer
+    tmp_buffer.map_sync(wgpu.MapMode.WRITE)
+    tmp_buffer.write_mapped(rotated_vertices.tobytes())
+    tmp_buffer.unmap()
+    command_encoder = device.create_command_encoder()
+    command_encoder.copy_buffer_to_buffer(
+        tmp_buffer, 0, vertex_buffer, 0, rotated_vertices.nbytes
+    )
+    device.queue.submit([command_encoder.finish()])
 
 
 def main() -> None:
     """
-    Main function to render a rotating triangle and print the high-resolution image.
+    Main function to render a rotating triangle and print the image to the terminal
     """
     vertices = np.array(
         [
@@ -298,21 +322,29 @@ def main() -> None:
 
     device = get_default_device()
     pipeline = create_render_pipeline(device)
-
+    vertex_buffer = init_buffers(device, vertices)
     angle = 0.0
-    while True:
-        clear_terminal()
-        rotated_vertices = rotate_vertices(vertices, angle)
-        vertex_buffer = create_vertex_buffer(device, rotated_vertices)
-        texture = render_triangle(device, pipeline, vertex_buffer, WIDTH, HEIGHT)
-        buffer = copy_texture_to_buffer(device, texture, WIDTH, HEIGHT)
 
-        buffer = pack_rgba_to_uint32(buffer)
-        buffer = swap_alternate_rows(buffer)
-        print_high_res_image(buffer)
+    try:
+        while True:
+            clear_terminal()
+            rotate_vertices(vertices, angle, vertex_buffer, device)
+            texture = render_triangle(device, pipeline, vertex_buffer, WIDTH, HEIGHT)
+            buffer = copy_texture_to_buffer(device, texture, WIDTH, HEIGHT)
+            buffer = pack_rgba_to_uint32(buffer)
+            buffer = swap_alternate_rows(buffer)
+            print_high_res_image(buffer)
 
-        angle += 0.2
-        time.sleep(0.1)
+            angle += 0.2
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        # Clean up resources just in case.
+        texture.destroy()
+        vertex_buffer.copy_buffer.destroy()
+        vertex_buffer.destroy()
+        device.destroy()
+
+        pass
 
 
 if __name__ == "__main__":
