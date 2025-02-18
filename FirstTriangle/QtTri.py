@@ -43,13 +43,23 @@ class WebGPUScene(WebGPUWidget):
         print("initializeWebGPU")
         try:
             self.device = get_default_device()
-            self.vertex_buffer = self.device.create_buffer_with_data(
-                data=self.vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX
-            )
+            self._init_buffers()
             self._create_render_pipeline()
             self.startTimer(100)
         except Exception as e:
             print(f"Failed to initialize WebGPU: {e}")
+
+    def _init_buffers(self):
+        self.vertex_buffer = self.device.create_buffer(
+            size=self.vertices.nbytes,
+            usage=wgpu.BufferUsage.VERTEX | wgpu.BufferUsage.COPY_DST,
+        )
+
+        # Create a copy buffer to update the vertex buffer
+        self.vertex_buffer.copy_buffer = self.device.create_buffer(
+            size=self.vertices.nbytes,
+            usage=wgpu.BufferUsage.MAP_WRITE | wgpu.BufferUsage.COPY_SRC,
+        )
 
     def _create_render_pipeline(self) -> None:
         """
@@ -202,9 +212,16 @@ class WebGPUScene(WebGPUWidget):
         """
         self.angle += 0.1
         vertices = self._rotate()
-        self.vertex_buffer = self.device.create_buffer_with_data(
-            data=vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX
+        tmp_buffer = self.vertex_buffer.copy_buffer
+        tmp_buffer.map_sync(wgpu.MapMode.WRITE)
+        tmp_buffer.write_mapped(vertices.tobytes())
+        tmp_buffer.unmap()
+        command_encoder = self.device.create_command_encoder()
+        command_encoder.copy_buffer_to_buffer(
+            tmp_buffer, 0, self.vertex_buffer, 0, vertices.nbytes
         )
+        self.device.queue.submit([command_encoder.finish()])
+
         self.update()
 
     def _rotate(self) -> np.ndarray:
