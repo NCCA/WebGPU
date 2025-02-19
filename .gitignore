@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+uv.*
 .vscode/
 .idea
 # stubgen files and MyPY

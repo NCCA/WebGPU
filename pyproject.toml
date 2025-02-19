@@ -22,25 +22,10 @@ dependencies = [
 Homepage = "https://github.com/NCCA/WebGPU"
 Issues = "https://github.com/NCCA/WebGPU/issues"
 
-[tool.mypy]
-disable_error_code = "import-untyped"
-warn_return_any = true
-warn_unused_configs = true
-follow_imports="skip"
-exclude = "tests/*" 
-namespace_packages = true
-explicit_package_bases = true
+[tool.uv]
+link-mode = "symlink"
+package = false
+python-preference = "managed"
 
-
-
-[tool.black]
-line-length = 99
-target-version = [ "py39", "py310", "py311","py312"]
-skip-magic-trailing-comma = true
-
-[tool.isort]
-py_version = 39
-profile = "black"
-line_length = 99
-combine_as_imports = true
-skip_gitignore = true
+[tool.uv.workspace]
+members = ["BlankWebGPU"]
