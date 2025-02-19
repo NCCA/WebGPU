@@ -1,0 +1,323 @@
+#!/usr/bin/env -S uv run --script
+import sys
+
+from qtpy.QtWidgets import QApplication
+from qtpy.QtCore import Qt, QEvent
+from WebGPUWidget import WebGPUWidget
+from qtpy.QtGui import QMouseEvent, QWheelEvent
+
+import wgpu
+import numpy as np
+from Emitter import Emitter
+from nccapy import Vec3
+from FirstPersonCamera import FirstPersonCamera
+from typing import Set
+
+
+class WebGPUScene(WebGPUWidget):
+    """
+    A concrete implementation of AbstractWebGPUWidget for a WebGPU scene.
+
+    This class implements the abstract methods to provide functionality for initializing,
+    painting, and resizing the WebGPU context.
+    """
+
+    def __init__(self, width=1024, height=720):
+        super().__init__(width, height)
+        self.camera = FirstPersonCamera(
+            Vec3(0.0, 1.0, 10.0),
+            Vec3(0.0, 0.0, 0.0),
+            Vec3(0.0, 1.0, 0.0),
+            45.0,
+        )
+        self.camera.set_projection(45.0, self.width() / self.height(), 0.5, 2000.0)
+        self.animate = False
+        self.key_pressed: Set[int] = set()
+        self.spinXFace: int = 0
+        self.spinYFace: int = 0
+        self.rotate: bool = False
+        self.translate: bool = False
+        self.origX: int = 0
+        self.origY: int = 0
+        self.INCREMENT: float = 0.01
+        self.ZOOM: float = 0.5
+
+    def initializeWebGPU(self) -> None:
+        """
+        Initialize the WebGPU context.
+
+        This method sets up the WebGPU context for the scene.
+        """
+        super().initializeWebGPU()
+        self.emitter = Emitter(
+            num_particles=5000,
+            max_alive=3000,
+            num_per_frame=100,
+        )
+        self._create_render_pipeline()
+        self.startTimer(10)
+
+    def _create_render_pipeline(self) -> None:
+        """
+        Create a render pipeline.
+        """
+        vertex_shader_code = """
+        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
+        struct Uniforms
+        {
+            MVP : mat4x4<f32>,
+        };
+
+        struct VertexIn {
+            @location(0) position: vec3<f32>,
+            @location(1) color: vec3<f32>,
+        };
+
+        struct VertexOut {
+            @builtin(position) position: vec4<f32>,
+            @location(0) fragColor: vec3<f32>,
+        };
+
+        @vertex
+        fn main(input: VertexIn) -> VertexOut {
+            var output: VertexOut;
+            output.position = uniforms.MVP * vec4<f32>(input.position, 1.0);
+            output.fragColor = input.color;
+            return output;
+        }
+        """
+
+        fragment_shader_code = """
+        @fragment
+        fn main(@location(0) fragColor: vec3<f32>) -> @location(0) vec4<f32> {
+            return vec4<f32>(fragColor, 1.0); // Simple color output
+        }
+        """
+
+        self.pipeline = self.device.create_render_pipeline(
+            label="particle_pipeline",
+            layout="auto",
+            vertex={
+                "module": self.device.create_shader_module(code=vertex_shader_code),
+                "entry_point": "main",
+                "buffers": [
+                    {
+                        "array_stride": 6 * 4,
+                        "step_mode": "vertex",
+                        "attributes": [
+                            {"format": "float32x3", "offset": 0, "shader_location": 0},
+                            {"format": "float32x3", "offset": 12, "shader_location": 1},
+                        ],
+                    }
+                ],
+            },
+            fragment={
+                "module": self.device.create_shader_module(code=fragment_shader_code),
+                "entry_point": "main",
+                "targets": [{"format": wgpu.TextureFormat.rgba8unorm}],
+            },
+            primitive={"topology": wgpu.PrimitiveTopology.point_list},
+        )
+        # Create a uniform buffer
+        self.uniform_data = np.zeros((), dtype=[("MVP", "float32", (16))])
+
+        self.uniform_buffer = self.device.create_buffer_with_data(
+            data=self.uniform_data.tobytes(),
+            usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
+            label="line_pipeline_uniform_buffer",
+        )
+
+        bind_group_layout = self.pipeline.get_bind_group_layout(0)
+        # Create the bind group
+        self.bind_group = self.device.create_bind_group(
+            layout=bind_group_layout,
+            entries=[
+                {
+                    "binding": 0,  # Matches @binding(0) in the shader
+                    "resource": {"buffer": self.uniform_buffer},
+                }
+            ],
+        )
+
+    def _init_buffers(self):
+        self.vertices = self.emitter.get_numpy()
+        self.vertex_buffer = self.device.create_buffer(
+            size=self.vertices.nbytes,
+            usage=wgpu.BufferUsage.VERTEX | wgpu.BufferUsage.COPY_DST,
+        )
+
+        # Create a copy buffer to update the vertex buffer
+        self.vertex_buffer.copy_buffer = self.device.create_buffer(
+            size=self.vertices.nbytes,
+            usage=wgpu.BufferUsage.MAP_WRITE | wgpu.BufferUsage.COPY_SRC,
+        )
+
+    def paintWebGPU(self) -> None:
+        """
+        Paint the WebGPU content.
+
+        This method renders the WebGPU content for the scene.
+        """
+        self.render_text(10, 20, "Particle System", size=20, colour=Qt.black)
+        texture = self.device.create_texture(
+            size=(self.width(), self.height(), 1),
+            format=wgpu.TextureFormat.rgba8unorm,
+            usage=wgpu.TextureUsage.RENDER_ATTACHMENT | wgpu.TextureUsage.COPY_SRC,
+        )
+        texture_view = texture.create_view()
+
+        command_encoder = self.device.create_command_encoder()
+        render_pass = command_encoder.begin_render_pass(
+            color_attachments=[
+                {
+                    "view": texture_view,
+                    "resolve_target": None,
+                    "load_op": wgpu.LoadOp.clear,
+                    "store_op": wgpu.StoreOp.store,
+                    "clear_value": (0.0, 0.0, 0.0, 1.0),
+                }
+            ]
+        )
+        particles = self.emitter.get_numpy()
+
+        if len(particles) == 0:
+            return
+        verts = self.device.create_buffer_with_data(
+            data=particles.tobytes(), usage=wgpu.BufferUsage.VERTEX
+        )
+
+        self.update_uniform_buffers()
+        render_pass.set_viewport(0, 0, 1024, 720, 0, 1)
+        render_pass.set_pipeline(self.pipeline)
+        render_pass.set_bind_group(0, self.bind_group, [], 0, 999999)
+        render_pass.set_vertex_buffer(0, verts)
+        render_pass.draw(particles.shape[0] // 6)
+        render_pass.end()
+        self.device.queue.submit([command_encoder.finish()])
+        self.update_colour_buffer(texture)
+
+    def resizeWebGPU(self, width: int, height: int) -> None:
+        """
+        Resize the WebGPU context.
+
+        This method handles resizing of the WebGPU context for the scene.
+
+        Args:
+            width (int): The new width of the widget.
+            height (int): The new height of the widget.
+        """
+        print(f"resizeWebGPU {width} {height}")
+
+    def timerEvent(self, event):
+        if self.animate:
+            self.emitter.update()
+
+        x = 0.0
+        y = 0.0
+        UPDATE = 0.1
+        for k in self.key_pressed:
+            if k == Qt.Key.Key_Left:
+                y -= UPDATE
+            elif k == Qt.Key.Key_Right:
+                y += UPDATE
+            elif k == Qt.Key.Key_Up:
+                x += UPDATE
+            elif k == Qt.Key.Key_Down:
+                x -= UPDATE
+        self.camera.move(x, y, 0.1)
+        self.update()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """
+        Handle the mouse press event.
+
+        Args:
+            event (QMouseEvent): The mouse press event.
+        """
+        pos = event.position()
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.origX = pos.x()
+            self.origY = pos.y()
+            self.rotate = True
+            self.update()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """
+        Handle the mouse move event.
+
+        Args:
+            event (QMouseEvent): The mouse move event.
+        """
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            pos = event.position()
+            diffx = int(pos.x() - self.origX)
+            diffy = int(pos.y() - self.origY)
+            self.spinXFace += 0.5 * diffy
+            self.spinYFace += 0.5 * diffx
+            self.origX = pos.x()
+            self.origY = pos.y()
+            self.camera.process_mouse_movement(diffx, diffy)
+            self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """
+        Handle the mouse release event.
+
+        Args:
+            event (QMouseEvent): The mouse release event.
+        """
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.rotate = False
+
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.translate = False
+        self.update()
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        """
+        Handle the mouse wheel event.
+
+        Args:
+            event (QWheelEvent): The mouse wheel event.
+        """
+        _ = event.pixelDelta()
+
+        self.update()
+
+    def keyReleaseEvent(self, event: QEvent) -> None:
+        """
+        Handle the key release event.
+
+        Args:
+            event (QEvent): The key release event.
+        """
+        key = event.key()
+        self.key_pressed.remove(key)
+        self.update()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        self.key_pressed.add(key)
+
+        if event.key() == Qt.Key_Space:
+            self.animate = not self.animate
+        if event.key() == Qt.Key_U:
+            self.emitter.update()
+
+    def update_uniform_buffers(self) -> None:
+        """
+        update the uniform buffers for the line pipeline.
+        """
+        mvp_matrix = (self.camera.get_vp()).get_numpy().astype(np.float32)
+        self.uniform_data["MVP"] = mvp_matrix.flatten()
+        self.device.queue.write_buffer(
+            buffer=self.uniform_buffer,
+            buffer_offset=0,
+            data=self.uniform_data.tobytes(),
+        )
+
+
+app = QApplication(sys.argv)
+win = WebGPUScene()
+win.show()
+sys.exit(app.exec())
