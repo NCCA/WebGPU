@@ -160,7 +160,7 @@ class WebGPUScene(WebGPUWidget):
         """
         self.render_text(10, 20, "Particle System", size=20, colour=Qt.black)
         texture = self.device.create_texture(
-            size=(self.width(), self.height(), 1),
+            size=self.texture_size,
             format=wgpu.TextureFormat.rgba8unorm,
             usage=wgpu.TextureUsage.RENDER_ATTACHMENT | wgpu.TextureUsage.COPY_SRC,
         )
@@ -174,7 +174,7 @@ class WebGPUScene(WebGPUWidget):
                     "resolve_target": None,
                     "load_op": wgpu.LoadOp.clear,
                     "store_op": wgpu.StoreOp.store,
-                    "clear_value": (0.0, 0.0, 0.0, 1.0),
+                    "clear_value": (0.3, 0.3, 0.3, 1.0),
                 }
             ]
         )
@@ -187,7 +187,7 @@ class WebGPUScene(WebGPUWidget):
         )
 
         self.update_uniform_buffers()
-        render_pass.set_viewport(0, 0, 1024, 720, 0, 1)
+        render_pass.set_viewport(0, 0, self.texture_size[0], self.texture_size[1], 0, 1)
         render_pass.set_pipeline(self.pipeline)
         render_pass.set_bind_group(0, self.bind_group, [], 0, 999999)
         render_pass.set_vertex_buffer(0, verts)
@@ -206,7 +206,8 @@ class WebGPUScene(WebGPUWidget):
             width (int): The new width of the widget.
             height (int): The new height of the widget.
         """
-        print(f"resizeWebGPU {width} {height}")
+        super().resizeWebGPU(width, height)
+        self.camera.set_projection(45.0, width / height, 0.5, 2000.0)
 
     def timerEvent(self, event):
         if self.animate:
@@ -318,6 +319,6 @@ class WebGPUScene(WebGPUWidget):
 
 
 app = QApplication(sys.argv)
-win = WebGPUScene()
+win = WebGPUScene(300, 200)
 win.show()
 sys.exit(app.exec())

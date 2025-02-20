@@ -44,7 +44,12 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
         self.initialized = False
         self.text_buffer: List[Tuple[int, int, str, int, str, QColor]] = []
         self.buffer = None
-        self.texture_size = (self.width(), self.height(), 1)
+
+        self.texture_size = (self._align_to_256(width), self._align_to_256(height), 1)
+
+    def _align_to_256(self, value: int) -> int:
+        """Rounds up the given value to the nearest multiple of 256."""
+        return (value + 255) // 256 * 256
 
     @abstractmethod
     def initializeWebGPU(self, default_context=True) -> None:
@@ -181,7 +186,7 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
         Update the color buffer with the rendered texture data.
         """
         buffer_size = (
-            self.width() * self.height() * 4
+            self.texture_size[0] * self.texture_size[1] * 4
         )  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
         try:
             readback_buffer = self.device.create_buffer(
@@ -193,11 +198,13 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
                 {"texture": texture},
                 {
                     "buffer": readback_buffer,
-                    "bytes_per_row": self.width()
+                    "bytes_per_row": self.texture_size[0]
                     * 4,  # Row stride (width * bytes per pixel)
-                    "rows_per_image": self.height(),  # Number of rows in the texture
+                    "rows_per_image": self.texture_size[
+                        1
+                    ],  # Number of rows in the texture
                 },
-                (self.width(), self.height(), 1),  # Copy size: width, height, depth
+                self.texture_size,  # Copy size: width, height, depth
             )
             self.device.queue.submit([command_encoder.finish()])
 
@@ -207,7 +214,7 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
             # Access the mapped memory
             raw_data = readback_buffer.read_mapped()
             self.buffer = np.frombuffer(raw_data, dtype=np.uint8).reshape(
-                (self.width(), self.height(), 4)
+                (self.texture_size[0], self.texture_size[1], 4)
             )  # Height, Width, Channels
             # Unmap the buffer when done
             readback_buffer.unmap()
