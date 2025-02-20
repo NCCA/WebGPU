@@ -31,7 +31,7 @@ class WebGPUScene(WebGPUWidget):
             45.0,
         )
         self.camera.set_projection(45.0, self.width() / self.height(), 0.5, 2000.0)
-        self.animate = False
+        self.animate = True
         self.key_pressed: Set[int] = set()
         self.spinXFace: int = 0
         self.spinYFace: int = 0
@@ -61,45 +61,16 @@ class WebGPUScene(WebGPUWidget):
         """
         Create a render pipeline.
         """
-        vertex_shader_code = """
-        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
-        struct Uniforms
-        {
-            MVP : mat4x4<f32>,
-        };
-
-        struct VertexIn {
-            @location(0) position: vec3<f32>,
-            @location(1) color: vec3<f32>,
-        };
-
-        struct VertexOut {
-            @builtin(position) position: vec4<f32>,
-            @location(0) fragColor: vec3<f32>,
-        };
-
-        @vertex
-        fn main(input: VertexIn) -> VertexOut {
-            var output: VertexOut;
-            output.position = uniforms.MVP * vec4<f32>(input.position, 1.0);
-            output.fragColor = input.color;
-            return output;
-        }
-        """
-
-        fragment_shader_code = """
-        @fragment
-        fn main(@location(0) fragColor: vec3<f32>) -> @location(0) vec4<f32> {
-            return vec4<f32>(fragColor, 1.0); // Simple color output
-        }
-        """
+        with open("particle_shader.wgsl", "r") as f:
+            shader_code = f.read()
+            shader_module = self.device.create_shader_module(code=shader_code)
 
         self.pipeline = self.device.create_render_pipeline(
             label="particle_pipeline",
             layout="auto",
             vertex={
-                "module": self.device.create_shader_module(code=vertex_shader_code),
-                "entry_point": "main",
+                "module": shader_module,
+                "entry_point": "vertex_main",
                 "buffers": [
                     {
                         "array_stride": 6 * 4,
@@ -112,8 +83,8 @@ class WebGPUScene(WebGPUWidget):
                 ],
             },
             fragment={
-                "module": self.device.create_shader_module(code=fragment_shader_code),
-                "entry_point": "main",
+                "module": shader_module,
+                "entry_point": "fragment_main",
                 "targets": [{"format": wgpu.TextureFormat.rgba8unorm}],
             },
             primitive={"topology": wgpu.PrimitiveTopology.point_list},
@@ -300,10 +271,12 @@ class WebGPUScene(WebGPUWidget):
         key = event.key()
         self.key_pressed.add(key)
 
-        if event.key() == Qt.Key_Space:
+        if key == Qt.Key_Space:
             self.animate = not self.animate
-        if event.key() == Qt.Key_U:
+        if key == Qt.Key_U:
             self.emitter.update()
+        if key == Qt.Key.Key_Escape:
+            self.close()
 
     def update_uniform_buffers(self) -> None:
         """
@@ -319,6 +292,6 @@ class WebGPUScene(WebGPUWidget):
 
 
 app = QApplication(sys.argv)
-win = WebGPUScene(300, 200)
+win = WebGPUScene()
 win.show()
 sys.exit(app.exec())
