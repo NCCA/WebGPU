@@ -67,8 +67,16 @@ render_pipeline = device.create_render_pipeline(
                 "array_stride": 8 * 4,  # 8 floats per vertex
                 "step_mode": "vertex",
                 "attributes": [
-                    {"format": "float32x3", "offset": 0, "shader_location": 0},  # Position
-                    {"format": "float32x3", "offset": 12, "shader_location": 1},  # Color
+                    {
+                        "format": "float32x3",
+                        "offset": 0,
+                        "shader_location": 0,
+                    },  # Position
+                    {
+                        "format": "float32x3",
+                        "offset": 12,
+                        "shader_location": 1,
+                    },  # Color
                     {"format": "float32x2", "offset": 24, "shader_location": 2},  # UV
                 ],
             }

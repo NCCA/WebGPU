@@ -140,11 +140,16 @@ class WebGPUWidget(QWidget, metaclass=QWidgetABCMeta):
 
         # Just in case, set render hints that may hurt performance.
         painter.setRenderHints(
-            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform, False
+            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform,
+            False,
         )
 
         image = QImage(
-            image_data.flatten(), size[0], size[1], size[0] * 4, QImage.Format.Format_RGBA8888
+            image_data.flatten(),
+            size[0],
+            size[1],
+            size[0] * 4,
+            QImage.Format.Format_RGBA8888,
         )
 
         rect1 = QRect(0, 0, size[0], size[1])

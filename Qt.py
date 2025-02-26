@@ -77,7 +77,9 @@ class WebGPUWindow(QWindow):
                         )
                     ],
                 ),
-                primitive=wgpu.PrimitiveState(topology=wgpu.PrimitiveTopology.triangle_list),
+                primitive=wgpu.PrimitiveState(
+                    topology=wgpu.PrimitiveTopology.triangle_list
+                ),
             )
         )
 

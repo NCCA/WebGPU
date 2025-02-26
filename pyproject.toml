@@ -13,7 +13,7 @@ classifiers = [
 license = {file = "LICENSE.txt"}
 version = "0.0.12"
 dependencies = [
-    "nccapy",
+    "nccapy == 0.1.0",
     "wgpu",
     "pyside6",
     "numpy",
@@ -27,5 +27,3 @@ link-mode = "symlink"
 package = false
 python-preference = "managed"
 
-[tool.uv.workspace]
-members = ["BlankWebGPU"]

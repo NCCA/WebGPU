@@ -60,9 +60,6 @@ class Emitter:
                 array.extend(self.colour[i])
         return np.array(array, dtype=np.float32)
 
-    def debug(self) -> None:
-        pass
-
     def update(self, dt: float = 0.01) -> None:
         gravity = np.array([0.0, -9.81, 0.0])
         # count number of particles alive in the system
@@ -79,6 +76,13 @@ class Emitter:
 
             if self.life[i] <= 0 or self.pos[i][1] < 0:
                 self._reset_particle(i)
+
+    def debug(self) -> None:
+        print("Particles:")
+        for i in range(self.num_particles):
+            print(
+                f"Particle {i}: pos={self.pos[i]}\ndir={self.dir[i]}\ncolour={self.colour[i]}\nlife={self.life[i]}\nstate={self.state[i]}"
+            )
 
     def _birth_particles(self) -> None:
         births = np.random.randint(0, self.num_per_frame)

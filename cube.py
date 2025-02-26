@@ -63,15 +63,21 @@ vertex_shader = device.create_shader_module(code=vertex_shader_code)
 fragment_shader = device.create_shader_module(code=fragment_shader_code)
 
 # Create the vertex buffer
-vertex_buffer = device.create_buffer_with_data(data=vertices, usage=wgpu.BufferUsage.VERTEX)
+vertex_buffer = device.create_buffer_with_data(
+    data=vertices, usage=wgpu.BufferUsage.VERTEX
+)
 
 # Create the index buffer
-index_buffer = device.create_buffer_with_data(data=indices, usage=wgpu.BufferUsage.INDEX)
+index_buffer = device.create_buffer_with_data(
+    data=indices, usage=wgpu.BufferUsage.INDEX
+)
 
 # Create the uniform buffer
 
 persp = nccapy.perspective(45.0, 1.0, 0.1, 100.0)
-lookat = nccapy.look_at(nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0))
+lookat = nccapy.look_at(
+    nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+)
 rotation = nccapy.Mat4.rotate_y(40)
 mvp_matrix = mvp_matrixncca = (persp @ lookat @ rotation).get_numpy().astype(np.float32)
 # print(mvp_matrix)
@@ -87,7 +93,9 @@ uniform_buffer = device.create_buffer_with_data(
 
 # Create the depth texture
 depth_texture = device.create_texture(
-    size=size, usage=wgpu.TextureUsage.RENDER_ATTACHMENT, format=wgpu.TextureFormat.depth24plus
+    size=size,
+    usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
+    format=wgpu.TextureFormat.depth24plus,
 )
 depth_texture_view = depth_texture.create_view()
 
@@ -110,7 +118,11 @@ bind_group = device.create_bind_group(
     entries=[
         {
             "binding": 0,
-            "resource": {"buffer": uniform_buffer, "offset": 0, "size": mvp_matrix.nbytes},
+            "resource": {
+                "buffer": uniform_buffer,
+                "offset": 0,
+                "size": mvp_matrix.nbytes,
+            },
         }
     ],
 )

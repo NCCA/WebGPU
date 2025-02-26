@@ -63,22 +63,28 @@ vertex_shader = device.create_shader_module(code=vertex_shader_code)
 fragment_shader = device.create_shader_module(code=fragment_shader_code)
 
 # Create the vertex buffer
-vertex_buffer = device.create_buffer_with_data(data=vertices, usage=wgpu.BufferUsage.VERTEX)
+vertex_buffer = device.create_buffer_with_data(
+    data=vertices, usage=wgpu.BufferUsage.VERTEX
+)
 
 # Create the index buffer
-index_buffer = device.create_buffer_with_data(data=indices, usage=wgpu.BufferUsage.INDEX)
+index_buffer = device.create_buffer_with_data(
+    data=indices, usage=wgpu.BufferUsage.INDEX
+)
 
 # Create the uniform buffer
 gl_to_web = nccapy.Mat4.from_list(
-            [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 0.5, 0.5],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        )
+    [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.5, 0.5],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+)
 persp = gl_to_web @ nccapy.perspective(45.0, 1.0, 0.1, 100.0)
-lookat = nccapy.look_at(nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0))
+lookat = nccapy.look_at(
+    nccapy.Vec3(0, 0, 5), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+)
 rotation = nccapy.Mat4.rotate_y(40)
 mvp_matrix = mvp_matrixncca = (persp @ lookat @ rotation).get_numpy().astype(np.float32)
 # print(mvp_matrix)
@@ -91,23 +97,25 @@ mvp_matrix = mvp_matrixncca = (persp @ lookat @ rotation).get_numpy().astype(np.
 #     label="uniform_buffer MVP",
 # )
 
-num_meshes=4
+num_meshes = 4
 buffer_size = 256 * num_meshes  # Each MVP matrix occupies 256 bytes
 uniform_buffer = device.create_buffer(
     size=buffer_size,
     usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
 )
 
-pos=-4
+pos = -4
 mvp_matrices = []
 for i in range(0, 4):
     trans = nccapy.Transform()
     trans.set_position(pos, 0, 0)
-    trans.set_rotation(pos*10, pos*10, pos*10)
+    trans.set_rotation(pos * 10, pos * 10, pos * 10)
     persp = gl_to_web @ nccapy.perspective(45.0, 1.0, 0.1, 100.0)
-    lookat = nccapy.look_at(nccapy.Vec3(0, 5, 10), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0))
+    lookat = nccapy.look_at(
+        nccapy.Vec3(0, 5, 10), nccapy.Vec3(0, 0, 0), nccapy.Vec3(0, 1, 0)
+    )
     rotation = nccapy.Mat4.rotate_y(40)
-    mvp_matrix  = (persp @ lookat @ trans.get_matrix()).get_numpy().astype(np.float32)
+    mvp_matrix = (persp @ lookat @ trans.get_matrix()).get_numpy().astype(np.float32)
     mvp_matrices.append(mvp_matrix)
     pos += 2.4
 
@@ -117,7 +125,9 @@ for i, matrix in enumerate(mvp_matrices):
 
 # Create the depth texture
 depth_texture = device.create_texture(
-    size=size, usage=wgpu.TextureUsage.RENDER_ATTACHMENT, format=wgpu.TextureFormat.depth24plus
+    size=size,
+    usage=wgpu.TextureUsage.RENDER_ATTACHMENT,
+    format=wgpu.TextureFormat.depth24plus,
 )
 depth_texture_view = depth_texture.create_view()
 
@@ -128,9 +138,10 @@ bind_group_layout = device.create_bind_group_layout(
         {
             "binding": 0,
             "visibility": wgpu.ShaderStage.VERTEX,
-            "buffer": {"type": wgpu.BufferBindingType.uniform,
-                       "has_dynamic_offset": True,
-                       },
+            "buffer": {
+                "type": wgpu.BufferBindingType.uniform,
+                "has_dynamic_offset": True,
+            },
         },
         # Add other bindings as needed
     ]
@@ -143,9 +154,10 @@ bind_group = device.create_bind_group(
         {
             "binding": 0,
             "resource": {
-                "buffer": uniform_buffer, 
-                "offset": 0, 
-                "size": mvp_matrix.nbytes},
+                "buffer": uniform_buffer,
+                "offset": 0,
+                "size": mvp_matrix.nbytes,
+            },
         }
     ],
 )
@@ -231,7 +243,6 @@ for i in range(0, 4):
     # device.queue.write_buffer(uniform_buffer, 0, mvp_matrix.tobytes())
     # render_pass.set_bind_group(0, bind_group)
     # render_pass.draw_indexed(len(indices), 1, 0, 0, 0)
-
 
 
 # render_pass.draw_indexed(len(indices), 1, 0, 0, 0)
