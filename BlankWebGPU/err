@@ -1,0 +1,107 @@
+Error calling Python override of QWidget::paintEvent(): Traceback (most recent call last):
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 130, in paintEvent
+    self.initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/./main.py", line 24, in initializeWebGPU
+    super().initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 59, in initializeWebGPU
+    self._init_default_context()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 71, in _init_default_context
+    self.adapter = wgpu.gpu.request_adapter_sync(power_preference=power_preference)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/_classes.py", line 106, in request_adapter_sync
+    return gpu.request_adapter_sync(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        power_preference=power_preference,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        force_fallback_adapter=force_fallback_adapter,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        canvas=canvas,
+        ^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 370, in request_adapter_sync
+    awaitable = self._request_adapter(
+        power_preference=power_preference,
+        force_fallback_adapter=force_fallback_adapter,
+        canvas=canvas,
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 436, in _request_adapter
+    struct = new_struct_p(
+        "WGPURequestAdapterOptions *",
+    ...<4 lines>...
+        # not used: nextInChain
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 99, in new_struct_p
+    struct_p = _new_struct_p(ctype, **kwargs)
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 134, in _new_struct_p
+    setattr(struct_p, key, val)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^
+TypeError: an integer is required
+Error calling Python override of QWidget::paintEvent(): Traceback (most recent call last):
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 130, in paintEvent
+    self.initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/./main.py", line 24, in initializeWebGPU
+    super().initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 59, in initializeWebGPU
+    self._init_default_context()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 71, in _init_default_context
+    self.adapter = wgpu.gpu.request_adapter_sync(power_preference=power_preference)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 370, in request_adapter_sync
+    awaitable = self._request_adapter(
+        power_preference=power_preference,
+        force_fallback_adapter=force_fallback_adapter,
+        canvas=canvas,
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 436, in _request_adapter
+    struct = new_struct_p(
+        "WGPURequestAdapterOptions *",
+    ...<4 lines>...
+        # not used: nextInChain
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 99, in new_struct_p
+    struct_p = _new_struct_p(ctype, **kwargs)
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 134, in _new_struct_p
+    setattr(struct_p, key, val)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^
+TypeError: an integer is required
+2025-02-19 09:41:49.329 python3[25724:134211] +[IMKClient subclass]: chose IMKClient_Modern
+2025-02-19 09:41:49.329 python3[25724:134211] +[IMKInputSession subclass]: chose IMKInputSession_Modern
+Error calling Python override of QWidget::paintEvent(): Traceback (most recent call last):
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 130, in paintEvent
+    self.initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/./main.py", line 24, in initializeWebGPU
+    super().initializeWebGPU()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 59, in initializeWebGPU
+    self._init_default_context()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/WebGPUWidget.py", line 71, in _init_default_context
+    self.adapter = wgpu.gpu.request_adapter_sync(power_preference=power_preference)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 370, in request_adapter_sync
+    awaitable = self._request_adapter(
+        power_preference=power_preference,
+        force_fallback_adapter=force_fallback_adapter,
+        canvas=canvas,
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 436, in _request_adapter
+    struct = new_struct_p(
+        "WGPURequestAdapterOptions *",
+    ...<4 lines>...
+        # not used: nextInChain
+    )
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 99, in new_struct_p
+    struct_p = _new_struct_p(ctype, **kwargs)
+  File "/Volumes/teaching/Code/WebGPU/BlankWebGPU/.venv/lib/python3.13/site-packages/wgpu/backends/wgpu_native/_api.py", line 134, in _new_struct_p
+    setattr(struct_p, key, val)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^
+TypeError: an integer is required
+resizeWebGPU 640 480
