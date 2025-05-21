@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run  --active --script
+import shutil
+import time
 
 import numpy as np
 import wgpu
 import wgpu.utils
 from wgpu.utils import get_default_device
-import time
-import shutil
 
 
 def get_terminal_size() -> tuple[int, int]:
@@ -226,9 +226,7 @@ def render_triangle(
     return texture
 
 
-def copy_texture_to_buffer(
-    device: wgpu.GPUDevice, texture: wgpu.GPUTexture, width: int, height: int
-) -> np.ndarray:
+def copy_texture_to_buffer(device: wgpu.GPUDevice, texture: wgpu.GPUTexture, width: int, height: int) -> np.ndarray:
     """
     Copy the texture to a buffer and return it as a NumPy array.
 
@@ -301,9 +299,7 @@ def rotate_vertices(
     tmp_buffer.write_mapped(rotated_vertices.tobytes())
     tmp_buffer.unmap()
     command_encoder = device.create_command_encoder()
-    command_encoder.copy_buffer_to_buffer(
-        tmp_buffer, 0, vertex_buffer, 0, rotated_vertices.nbytes
-    )
+    command_encoder.copy_buffer_to_buffer(tmp_buffer, 0, vertex_buffer, 0, rotated_vertices.nbytes)
     device.queue.submit([command_encoder.finish()])
 
 

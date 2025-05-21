@@ -1,17 +1,16 @@
-#!/usr/bin/env -S uv run --script
+#!/usr/bin/env -S uv run --active --script
 import sys
-
-from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt, QEvent
-from WebGPUWidget import WebGPUWidget
-from qtpy.QtGui import QMouseEvent, QWheelEvent
-
-import wgpu
-import numpy as np
-from Emitter import Emitter
-from nccapy import Vec3
-from FirstPersonCamera import FirstPersonCamera
 from typing import Set
+
+import numpy as np
+import wgpu
+from Emitter import Emitter
+from FirstPersonCamera import FirstPersonCamera
+from nccapy import Vec3
+from qtpy.QtCore import QEvent, Qt
+from qtpy.QtGui import QMouseEvent, QWheelEvent
+from qtpy.QtWidgets import QApplication
+from WebGPUWidget import WebGPUWidget
 
 
 class WebGPUScene(WebGPUWidget):
@@ -183,9 +182,7 @@ class WebGPUScene(WebGPUWidget):
         )
 
         # Create vertex buffers
-        self.billboard_buffer = self.device.create_buffer_with_data(
-            data=quad_vertices, usage=wgpu.BufferUsage.VERTEX
-        )
+        self.billboard_buffer = self.device.create_buffer_with_data(data=quad_vertices, usage=wgpu.BufferUsage.VERTEX)
 
     def paintWebGPU(self) -> None:
         """
@@ -223,9 +220,7 @@ class WebGPUScene(WebGPUWidget):
 
         if len(particles) == 0:
             return
-        verts = self.device.create_buffer_with_data(
-            data=particles.tobytes(), usage=wgpu.BufferUsage.VERTEX
-        )
+        verts = self.device.create_buffer_with_data(data=particles.tobytes(), usage=wgpu.BufferUsage.VERTEX)
 
         self.update_uniform_buffers()
         render_pass.set_viewport(0, 0, self.texture_size[0], self.texture_size[1], 0, 1)
@@ -360,9 +355,7 @@ class WebGPUScene(WebGPUWidget):
         """
         mvp_matrix = (self.camera.get_vp()).get_numpy().astype(np.float32)
         self.uniform_data["MVP"] = mvp_matrix.flatten()
-        self.uniform_data["eye"] = np.array(
-            [self.camera.eye.x, self.camera.eye.y, self.camera.eye.z], dtype=np.float32
-        )
+        self.uniform_data["eye"] = np.array([self.camera.eye.x, self.camera.eye.y, self.camera.eye.z], dtype=np.float32)
         self.uniform_data["circle_square"] = self.circle_square
         self.device.queue.write_buffer(
             buffer=self.uniform_buffer,

@@ -5,19 +5,22 @@ authors = [
 ]
 description = "Some WebGPU demos"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 license = {file = "LICENSE.txt"}
-version = "0.0.12"
+version = "0.1.0"
 dependencies = [
-    "nccapy == 0.1.0",
+    "nccapy",
     "wgpu",
     "pyside6",
-    "numpy",
-    "qtpy"]
+    "qtpy",
+    "cffi>=1.17.1",
+    "pre-commit>=4.2.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/NCCA/WebGPU"
 Issues = "https://github.com/NCCA/WebGPU/issues"
@@ -27,3 +30,6 @@ link-mode = "symlink"
 package = false
 python-preference = "managed"
 
+[tool.uv.workspace]
+members=["FirstTriangle","BlankWebGPU","ParticleSystems/*","Primitives"]
+exclude =["*"]

@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --active --script
 import sys
+
 import numpy as np
+import wgpu
+import wgpu.utils
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication
 from WebGPUWidget import WebGPUWidget
-import wgpu
-import wgpu.utils
 from wgpu.utils import get_default_device
 
 
@@ -157,9 +158,7 @@ class WebGPUScene(WebGPUWidget):
         """
         Update the color buffer with the rendered texture data.
         """
-        buffer_size = (
-            self.width * self.height * 4
-        )  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
+        buffer_size = self.width * self.height * 4  # Width * Height * Bytes per pixel (RGBA8 is 4 bytes per pixel)
         try:
             readback_buffer = self.device.create_buffer(
                 size=buffer_size,
@@ -170,8 +169,7 @@ class WebGPUScene(WebGPUWidget):
                 {"texture": texture},
                 {
                     "buffer": readback_buffer,
-                    "bytes_per_row": self.width
-                    * 4,  # Row stride (width * bytes per pixel)
+                    "bytes_per_row": self.width * 4,  # Row stride (width * bytes per pixel)
                     "rows_per_image": self.height,  # Number of rows in the texture
                 },
                 (self.width, self.height, 1),  # Copy size: width, height, depth
@@ -183,9 +181,11 @@ class WebGPUScene(WebGPUWidget):
 
             # Access the mapped memory
             raw_data = readback_buffer.read_mapped()
-            self.buffer = np.frombuffer(raw_data, dtype=np.uint8).reshape(
-                (self.width, self.height, 4)
-            )  # Height, Width, Channels
+            self.buffer = np.frombuffer(raw_data, dtype=np.uint8).reshape((
+                self.width,
+                self.height,
+                4,
+            ))  # Height, Width, Channels
 
             # Unmap the buffer when done
             readback_buffer.unmap()
@@ -217,9 +217,7 @@ class WebGPUScene(WebGPUWidget):
         tmp_buffer.write_mapped(vertices.tobytes())
         tmp_buffer.unmap()
         command_encoder = self.device.create_command_encoder()
-        command_encoder.copy_buffer_to_buffer(
-            tmp_buffer, 0, self.vertex_buffer, 0, vertices.nbytes
-        )
+        command_encoder.copy_buffer_to_buffer(tmp_buffer, 0, self.vertex_buffer, 0, vertices.nbytes)
         self.device.queue.submit([command_encoder.finish()])
 
         self.update()

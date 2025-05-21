@@ -1,0 +1,13 @@
+[project]
+name = "FirstTriangle"
+description = "Simple Triangle Demos"
+requires-python = ">=3.11"
+version = "0.1.0"
+dependencies = [
+    "nccapy",
+    "wgpu",
+    "pyside6",
+    "numpy",
+    "qtpy",
+    "cffi>=1.17.1",
+]

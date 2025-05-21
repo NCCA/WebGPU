@@ -1,15 +1,12 @@
-#!/usr/bin/env python3
-
+#!/usr/bin/env -S uv run --active --script
 import numpy as np
 import wgpu
 import wgpu.utils
-from wgpu.utils import get_default_device
 from PIL import Image
+from wgpu.utils import get_default_device
 
 
-def create_vertex_buffer(
-    device: wgpu.GPUDevice, vertices: np.ndarray
-) -> wgpu.GPUBuffer:
+def create_vertex_buffer(device: wgpu.GPUDevice, vertices: np.ndarray) -> wgpu.GPUBuffer:
     """
     Create a vertex buffer.
 
@@ -20,9 +17,7 @@ def create_vertex_buffer(
     Returns:
         wgpu.GPUBuffer: The created vertex buffer.
     """
-    return device.create_buffer_with_data(
-        data=vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX
-    )
+    return device.create_buffer_with_data(data=vertices.tobytes(), usage=wgpu.BufferUsage.VERTEX)
 
 
 def create_render_pipeline(device: wgpu.GPUDevice) -> wgpu.GPURenderPipeline:
@@ -136,9 +131,7 @@ def render_triangle(
     return texture
 
 
-def copy_texture_to_buffer(
-    device: wgpu.GPUDevice, texture: wgpu.GPUTexture, width: int, height: int
-) -> np.ndarray:
+def copy_texture_to_buffer(device: wgpu.GPUDevice, texture: wgpu.GPUTexture, width: int, height: int) -> np.ndarray:
     """
     Copy the texture to a buffer and return it as a NumPy array.
 
